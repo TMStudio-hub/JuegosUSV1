@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Amazon Fresh – ¡Adivina la Acción!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fresh: #00A8A2; --amazon: #FF9900; --dark: #0F2027;
+    --card: #1a2f38; --accent: #FFD166; --danger: #EF476F;
+    --success: #06D6A0; --white: #F7FFF7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+  body { font-family: 'Nunito', sans-serif; background: var(--dark); color: var(--white); min-height: 100vh; overflow-x: hidden; }
+  body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 20% 20%,#00a8a230 0%,transparent 50%), radial-gradient(ellipse at 80% 80%,#ff990020 0%,transparent 50%); pointer-events:none; z-index:0; }
+
+  .screen { display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px 20px; position:relative; z-index:1; animation:fadeIn .4s ease; }
+  .screen.active { display:flex; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+
+  .logo-title { font-family:'Fredoka One',cursive; font-size:clamp(2rem,8vw,3rem); color:var(--fresh); text-shadow:0 4px 20px #00a8a260; line-height:1; text-align:center; }
+  .logo-sub { font-size:.85rem; color:var(--amazon); font-weight:900; letter-spacing:2px; text-transform:uppercase; text-align:center; margin-top:4px; margin-bottom:20px; }
+
+  .card { background:var(--card); border-radius:20px; padding:22px 18px; width:100%; max-width:440px; box-shadow:0 12px 40px #00000060,0 0 0 1px #ffffff10; margin-bottom:14px; }
+
+  .btn { display:block; width:100%; max-width:320px; padding:15px 24px; border:none; border-radius:50px; font-family:'Fredoka One',cursive; font-size:1.2rem; cursor:pointer; text-align:center; transition:transform .15s; margin:8px auto 0; }
+  .btn:active { transform:scale(.96); }
+  .btn-primary   { background:var(--amazon); color:var(--dark); box-shadow:0 6px 24px #ff990050; }
+  .btn-secondary { background:var(--fresh); color:white; box-shadow:0 6px 24px #00a8a250; }
+  .btn-ghost     { background:#ffffff15; color:var(--white); }
+  .btn-danger    { background:var(--danger); color:white; }
+  .btn-sm { font-size:.9rem; padding:10px 18px; }
+
+  .input-wrap { margin-bottom:12px; }
+  .input-wrap label { display:block; font-size:.75rem; color:#aaa; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase; }
+  input[type=text], input[type=password], textarea, select {
+    width:100%; padding:11px 14px; border-radius:12px; border:2px solid #ffffff20;
+    background:#ffffff0d; color:var(--white); font-size:.95rem; font-family:'Nunito',sans-serif;
+    outline:none; transition:border .2s; resize:vertical; -webkit-appearance:none;
+  }
+  input:focus, textarea:focus, select:focus { border-color:var(--fresh); }
+  select option { background:#1a2f38; color:white; }
+
+  /* Room code badge */
+  .room-badge { display:inline-flex; align-items:center; gap:6px; background:#ffffff12; border-radius:50px; padding:6px 14px; font-weight:900; font-size:.85rem; color:var(--accent); margin-bottom:14px; }
+
+  /* Timer */
+  .timer-ring-wrap { position:relative; width:88px; height:88px; }
+  .timer-ring { transform:rotate(-90deg); }
+  .timer-bg  { fill:none; stroke:#ffffff15; stroke-width:8; }
+  .timer-arc { fill:none; stroke-width:8; stroke-linecap:round; stroke-dasharray:283; transition:stroke-dashoffset .9s linear,stroke .3s; }
+  .timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Fredoka One',cursive; font-size:1.7rem; }
+
+  /* Stage */
+  .stage { background:#0a1a20; border-radius:16px; padding:6px; margin-bottom:12px; box-shadow:inset 0 0 30px #00000080; overflow:hidden; }
+  .stage svg { display:block; margin:auto; }
+
+  /* Options */
+  .options-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; width:100%; max-width:440px; margin-bottom:12px; }
+  .opt-btn { padding:13px 8px; border-radius:13px; border:2px solid #ffffff20; background:var(--card); color:var(--white); font-family:'Nunito',sans-serif; font-weight:700; font-size:.9rem; cursor:pointer; text-align:center; transition:all .2s; line-height:1.3; }
+  .opt-btn:active { transform:scale(.95); }
+  .opt-btn.correct { background:var(--success); border-color:var(--success); color:var(--dark); }
+  .opt-btn.wrong   { background:var(--danger);  border-color:var(--danger);  color:white; }
+  .opt-btn:disabled { opacity:.7; cursor:default; }
+
+  .score-badge { display:inline-flex; align-items:center; gap:6px; background:#ffffff12; border-radius:50px; padding:7px 14px; font-weight:900; }
+  .score-badge span { color:var(--amazon); font-family:'Fredoka One',cursive; font-size:1.3rem; }
+  .q-counter { color:#aaa; font-size:.82rem; margin-bottom:5px; text-align:center; }
+  .q-label { font-family:'Fredoka One',cursive; font-size:1.35rem; text-align:center; margin-bottom:11px; color:var(--accent); line-height:1.2; }
+
+  .progress-wrap { width:100%; background:#ffffff15; border-radius:10px; height:5px; margin-bottom:12px; }
+  .progress-bar  { height:5px; border-radius:10px; background:linear-gradient(90deg,var(--fresh),var(--amazon)); transition:width .4s; }
+
+  /* Feedback */
+  .feedback { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; font-family:'Fredoka One',cursive; font-size:2.6rem; pointer-events:none; opacity:0; }
+  .feedback.show { animation:flash .65s ease forwards; }
+  @keyframes flash { 0%{opacity:0;transform:scale(.6)} 40%{opacity:1;transform:scale(1.1)} 80%{opacity:1;transform:scale(1)} 100%{opacity:0} }
+  .feedback.ok  { background:#06d6a030; color:var(--success); }
+  .feedback.bad { background:#ef476f30; color:var(--danger); }
+
+  /* Result */
+  .trophy { font-size:3.5rem; text-align:center; margin-bottom:8px; }
+  .final-score { font-family:'Fredoka One',cursive; font-size:2.8rem; color:var(--amazon); text-align:center; }
+  .final-name  { font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--fresh); text-align:center; margin-bottom:14px; }
+  .result-rank-badge { display:inline-block; background:#ffffff12; border-radius:50px; padding:8px 20px; font-family:'Fredoka One',cursive; font-size:1.05rem; color:var(--accent); margin-top:8px; }
+
+  .bounce { font-size:2.6rem; text-align:center; margin-bottom:10px; animation:bou 1s infinite alternate; }
+  @keyframes bou { from{transform:translateY(0)} to{transform:translateY(-10px)} }
+  .hint { text-align:center; font-size:.78rem; color:#555; margin-top:8px; }
+
+  /* Admin */
+  .admin-btn { position:fixed; top:14px; right:14px; z-index:200; background:#ffffff15; border:none; border-radius:50%; width:44px; height:44px; font-size:1.3rem; cursor:pointer; color:white; backdrop-filter:blur(10px); }
+  .overlay { display:none; position:fixed; inset:0; z-index:300; background:#000c; backdrop-filter:blur(8px); flex-direction:column; align-items:center; padding:16px; overflow-y:auto; }
+  .overlay.open { display:flex; }
+  .panel-header { display:flex; justify-content:space-between; align-items:center; width:100%; max-width:480px; margin-bottom:14px; margin-top:8px; }
+  .panel-title { font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--amazon); }
+  .close-x { background:#fff2; border:none; border-radius:50%; width:36px; height:36px; color:white; font-size:1.1rem; cursor:pointer; }
+
+  /* Tabs */
+  .tabs { display:flex; gap:6px; margin-bottom:14px; width:100%; max-width:480px; }
+  .tab { flex:1; padding:9px 4px; border:none; border-radius:12px; font-family:'Fredoka One',cursive; font-size:.85rem; cursor:pointer; background:#ffffff10; color:#aaa; transition:all .2s; }
+  .tab.active { background:var(--amazon); color:var(--dark); }
+  .tab-content { display:none; width:100%; max-width:480px; }
+  .tab-content.active { display:block; }
+
+  /* Anim grid */
+  .anim-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+  .anim-opt { background:#0a1a20; border:2px solid #ffffff20; border-radius:12px; padding:6px 4px; cursor:pointer; text-align:center; transition:border .2s; }
+  .anim-opt:hover { border-color:var(--fresh); }
+  .anim-opt.selected { border-color:var(--amazon); background:#1a2f38; }
+  .anim-opt svg { display:block; margin:auto; }
+  .anim-label { font-size:.62rem; color:#aaa; margin-top:3px; }
+
+  /* Action list */
+  .action-card { background:var(--card); border-radius:14px; padding:13px 15px; margin-bottom:9px; border:1px solid #ffffff10; display:flex; align-items:flex-start; gap:10px; }
+  .ac-info { flex:1; min-width:0; }
+  .ac-name { font-weight:900; font-size:.95rem; color:var(--fresh); }
+  .ac-opts { font-size:.72rem; color:#888; margin-top:3px; flex-wrap:wrap; }
+  .tag { display:inline-block; background:#ffffff15; border-radius:20px; padding:2px 9px; font-size:.7rem; margin:2px; color:var(--accent); }
+  .del { background:none; border:none; color:var(--danger); font-size:1.3rem; cursor:pointer; padding:4px 6px; flex-shrink:0; line-height:1; }
+  .section-lbl { font-family:'Fredoka One',cursive; font-size:.88rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .msg { text-align:center; font-size:.85rem; margin-top:8px; padding:8px; border-radius:10px; }
+  .msg.ok  { background:#06d6a020; color:var(--success); }
+  .msg.err { background:#ef476f20; color:var(--danger); }
+
+  /* Leaderboard */
+  .lb-row { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:14px; padding:12px 16px; margin-bottom:8px; border:1px solid #ffffff10; animation:fadeIn .3s ease both; }
+  .lb-rank { font-family:'Fredoka One',cursive; font-size:1.4rem; min-width:34px; text-align:center; }
+  .lb-info { flex:1; min-width:0; }
+  .lb-name  { font-weight:900; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lb-meta  { font-size:.72rem; color:#aaa; margin-top:2px; }
+  .lb-score { font-family:'Fredoka One',cursive; font-size:1.4rem; color:var(--amazon); flex-shrink:0; }
+  .lb-rank-1 { color:#FFD700; } .lb-rank-2 { color:#C0C0C0; } .lb-rank-3 { color:#CD7F32; } .lb-rank-n { color:#aaa; }
+
+  /* PIN */
+  .pin-input { display:flex; gap:8px; justify-content:center; margin:12px 0; }
+  .pin-digit { width:52px; height:58px; border-radius:12px; border:2px solid #ffffff30; background:#ffffff0d; color:var(--white); font-family:'Fredoka One',cursive; font-size:1.6rem; text-align:center; outline:none; -webkit-appearance:none; }
+  .pin-digit:focus { border-color:var(--amazon); }
+
+  /* Room selector in LB */
+  .room-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .room-tab { padding:6px 14px; border:2px solid #ffffff20; border-radius:50px; background:none; color:#aaa; font-family:'Fredoka One',cursive; font-size:.85rem; cursor:pointer; transition:all .2s; }
+  .room-tab.active { border-color:var(--amazon); color:var(--amazon); background:#ff990015; }
+  .lb-empty { text-align:center; color:#555; padding:30px 0; font-size:.9rem; }
+
+  /* Welcome room code input */
+  .room-code-display { font-family:'Fredoka One',cursive; font-size:2rem; color:var(--amazon); text-align:center; letter-spacing:4px; margin:8px 0 4px; }
+</style>
+</head>
+<body>
+
+<div class="feedback" id="fb"></div>
+<button class="admin-btn" onclick="toggleAdmin()">⚙️</button>
+
+<!-- ===== ADMIN PANEL ===== -->
+<div class="overlay" id="admin">
+  <div class="panel-header">
+    <div class="panel-title">⚙️ Panel Admin</div>
+    <button class="close-x" onclick="toggleAdmin()">✕</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('tab-actions',this)">🎭 Acciones</button>
+    <button class="tab" onclick="switchTab('tab-lb',this)">🏆 Resultados</button>
+    <button class="tab" onclick="switchTab('tab-cfg',this)">⚙️ Config</button>
+    <button class="tab" onclick="switchTab('tab-arb',this)">🏁 Árbitro</button>
+  </div>
+
+  <!-- TAB ACCIONES -->
+  <div class="tab-content active" id="tab-actions">
+    <div class="card">
+      <div class="section-lbl">➕ Nueva acción</div>
+      <div class="input-wrap">
+        <label>Nombre (= respuesta correcta)</label>
+        <input type="text" id="a-name" placeholder="Ej. Contar inventario" maxlength="35">
+      </div>
+      <div class="input-wrap">
+        <label>Pregunta que verá el jugador</label>
+        <input type="text" id="a-label" placeholder="Ej. ¿Qué tarea realiza?" maxlength="50">
+      </div>
+      <div class="input-wrap">
+        <label>3 opciones incorrectas (separadas por coma)</label>
+        <input type="text" id="a-wrong" placeholder="Ej. Hacer pick, Empacar, Stow">
+      </div>
+      <div class="input-wrap">
+        <label>Animación del muñequito</label>
+        <div class="anim-grid" id="anim-grid"></div>
+      </div>
+      <div id="form-msg"></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="saveAction()">✅ Agregar acción</button>
+    </div>
+    <div class="section-lbl">📋 Acciones guardadas</div>
+    <div id="action-list"></div>
+  </div>
+
+  <!-- TAB RESULTADOS -->
+  <div class="tab-content" id="tab-lb">
+    <div id="pin-gate" class="card" style="text-align:center;">
+      <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
+      <p style="color:#aaa;font-size:.9rem;margin-bottom:4px;">PIN de administrador</p>
+      <p style="font-size:.75rem;color:#555;margin-bottom:12px;">Por defecto: <strong style="color:var(--accent);">1234</strong></p>
+      <div class="pin-input">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p0" oninput="pinNext(0)">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p1" oninput="pinNext(1)">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p2" oninput="pinNext(2)">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p3" oninput="pinNext(3)">
+      </div>
+      <div id="pin-msg"></div>
+      <button class="btn btn-secondary btn-sm" onclick="checkPin()">Entrar</button>
+    </div>
+    <div id="lb-content" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="section-lbl" style="margin:0;">🏆 Marcador por sala</div>
+        <button class="btn btn-danger btn-sm" style="margin:0;max-width:110px;font-size:.78rem;" onclick="clearRoomScores()">🗑 Limpiar sala</button>
+      </div>
+      <div class="room-tabs" id="room-tabs"></div>
+      <div id="lb-rows"></div>
+    </div>
+  </div>
+
+  <!-- TAB CONFIG -->
+  <div class="tab-content" id="tab-cfg">
+    <div class="card">
+      <div class="section-lbl">🚪 Gestionar salas</div>
+      <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Las salas son los códigos que los equipos usan al entrar. El admin crea las salas y cada una guarda sus propios scores.</p>
+      <div class="input-wrap">
+        <label>Nueva sala (código)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-room" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;">
+          <button class="btn btn-secondary btn-sm" style="margin:0;white-space:nowrap;max-width:100px;" onclick="addRoom()">+ Agregar</button>
+        </div>
+      </div>
+      <div id="room-list"></div>
+      <div id="room-msg"></div>
+    </div>
+    <div class="card">
+      <div class="section-lbl">� Configuración del juego</div>
+      <div class="input-wrap">
+        <label>Número de preguntas por partida</label>
+        <input type="number" id="game-length" min="4" max="20" value="8" style="width:100px;">
+      </div>
+      <div class="input-wrap">
+        <label>Tiempo por pregunta (segundos)</label>
+        <select id="time-limit">
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25">25</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <label>Límite recomendado de jugadores</label>
+        <input type="text" value="Hasta 15 personas por sala" disabled>
+      </div>
+      <div id="settings-msg"></div>
+      <button class="btn btn-secondary btn-sm" onclick="saveSettings()">Guardar configuración</button>
+    </div>
+    <div class="card">
+      <div class="section-lbl">🔑 Cambiar PIN admin</div>
+      <div class="input-wrap">
+        <label>Nuevo PIN (4 dígitos)</label>
+        <input type="password" id="new-pin" inputmode="numeric" maxlength="4" placeholder="••••">
+      </div>
+      <div id="pin-change-msg"></div>
+      <button class="btn btn-ghost btn-sm" onclick="changePin()">Guardar PIN</button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-arb">
+    <div class="card">
+      <div class="section-lbl">🎤 Control del árbitro</div>
+      <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Usa esta vista para llevar la sesión en vivo. Presenta la pregunta, muestra la respuesta correcta y controla el ritmo del juego.</p>
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:120px;" onclick="startArbiter()">Iniciar ronda</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;min-width:120px;" onclick="adminNextQuestion()">Siguiente pregunta</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:120px;" onclick="adminShowAnswer()">Mostrar respuesta</button>
+      </div>
+      <div class="msg" id="arb-msg" style="margin-top:12px;display:none;"></div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="score-badge" style="margin-bottom:12px;">Pregunta <span id="arb-number">0</span> / <span id="arb-total">0</span></div>
+      <div class="stage" style="margin:0 auto;max-width:320px;">
+        <svg id="arb-svg" width="100%" viewBox="0 0 220 200" style="max-height:165px;"></svg>
+      </div>
+      <div class="q-label" id="arb-label" style="margin-top:14px;color:var(--white);"></div>
+      <div style="margin-top:12px;">
+        <span class="tag" id="arb-answer" style="background:#ffffff10;color:#aaa;">Respuesta correcta</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WELCOME ===== -->
+<div class="screen active" id="s-welcome">
+  <div class="logo-title">🛒 Amazon Fresh</div>
+  <div class="logo-sub">¡Adivina la Acción!</div>
+  <div class="bounce">🕺</div>
+  <div class="card">
+    <div class="input-wrap">
+      <label>Tu nombre</label>
+      <input type="text" id="player-name" placeholder="Ej. María García" maxlength="25">
+    </div>
+    <div class="input-wrap">
+      <label>Código de sala</label>
+      <input type="text" id="room-code-input" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;font-family:'Fredoka One',cursive;font-size:1.1rem;letter-spacing:2px;">
+    </div>
+    <p class="hint">Tu manager te dará el código de sala</p>
+  </div>
+  <button class="btn btn-primary" onclick="startGame()">¡Jugar! 🎮</button>
+  <p class="hint" style="margin-top:12px;">Admin: toca ⚙️ para configurar</p>
+</div>
+
+<!-- ===== GAME ===== -->
+<div class="screen" id="s-game">
+  <div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <div>
+      <div class="score-badge">🌟 <span id="score-disp">0</span> pts</div>
+      <div id="game-room-badge" style="font-size:.72rem;color:var(--accent);font-weight:900;margin-top:4px;text-align:center;letter-spacing:1px;"></div>
+    </div>
+    <div class="timer-ring-wrap">
+      <svg class="timer-ring" width="88" height="88" viewBox="0 0 100 100">
+        <circle class="timer-bg" cx="50" cy="50" r="45"/>
+        <circle class="timer-arc" id="t-arc" cx="50" cy="50" r="45" stroke="var(--fresh)" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-num" id="t-num">15</div>
+    </div>
+  </div>
+  <div style="width:100%;max-width:440px;">
+    <div class="progress-wrap"><div class="progress-bar" id="prog" style="width:0%"></div></div>
+    <div class="q-counter" id="q-cnt"></div>
+  </div>
+  <div class="stage" style="width:100%;max-width:440px;">
+    <svg id="sm-svg" width="100%" viewBox="0 0 220 200" style="max-height:165px;"></svg>
+  </div>
+  <div class="q-label" id="q-lbl"></div>
+  <div class="options-grid" id="opts"></div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div class="screen" id="s-result">
+  <div class="logo-title">Amazon Fresh</div>
+  <div class="logo-sub">Día del Trabajador 🎉</div>
+  <div class="trophy" id="r-trophy">🏆</div>
+  <div class="final-name" id="r-name"></div>
+  <p style="color:#aaa;font-size:.85rem;text-align:center;">Puntaje final</p>
+  <div class="final-score" id="r-score"></div>
+  <div class="result-rank-badge" id="r-rank"></div>
+  <p id="r-position" style="color:#aaa;font-size:.85rem;text-align:center;margin-top:8px;"></p>
+  <p id="r-room-label" style="color:var(--fresh);font-weight:900;font-size:.85rem;text-align:center;margin-top:4px;"></p>
+  <div class="card" style="margin-top:16px;text-align:center;">
+    <p style="font-weight:900;color:var(--fresh);font-size:1.05rem;">🎉 Feliz Día del Trabajador 🎉</p>
+    <p style="color:#aaa;font-size:.8rem;margin-top:4px;">¡Comparte tu score con tus compañeros!</p>
+  </div>
+  <button class="btn btn-secondary" style="margin-top:14px;" onclick="restart()">Jugar de nuevo 🔄</button>
+</div>
+
+<script>
+// ============================================================
+//  ANIMATIONS
+// ============================================================
+const CX=110, FL=175;
+function base(x){return`<line x1="${CX}" y1="${FL}" x2="${CX-15}" y2="${FL}" stroke="#666" stroke-width="3"/><line x1="${CX}" y1="${FL}" x2="${CX+15}" y2="${FL}" stroke="#666" stroke-width="3"/><line x1="${CX}" y1="${FL-30}" x2="${CX}" y2="${FL-70}" stroke="var(--fresh)" stroke-width="4"/><circle cx="${CX}" cy="${FL-80}" r="12" fill="none" stroke="var(--fresh)" stroke-width="3"/>${x}`;}
+
+const ANIMS={
+  stow:{label:"Stow",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+42}" y2="${FL-102}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-22}" y2="${FL-46}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX+18}" y1="${FL-110}" x2="${CX+68}" y2="${FL-110}" stroke="var(--accent)" stroke-width="3"/><rect x="${CX+38}" y="${FL-122}" width="22" height="16" rx="3" fill="var(--amazon)"/><animateTransform attributeName="transform" type="translate" values="0 0;0 -4;0 0" dur=".8s" repeatCount="indefinite" additive="sum"/>`)},
+  pick:{label:"Pick",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+36}" y2="${FL-28}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-22}" y2="${FL-50}" stroke="var(--fresh)" stroke-width="4"/><rect x="${CX+28}" y="${FL-22}" width="20" height="15" rx="3" fill="var(--amazon)"/><animateTransform attributeName="transform" type="translate" values="0 0;2 0;0 0;-2 0;0 0" dur=".7s" repeatCount="indefinite" additive="sum"/>`)},
+  scan:{label:"Escanear",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+32}" y2="${FL-62}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-12}" y2="${FL-46}" stroke="var(--fresh)" stroke-width="4"/><rect x="${CX+30}" y="${FL-72}" width="18" height="28" rx="4" fill="#334"/><line x1="${CX+48}" y1="${FL-60}" x2="${CX+66}" y2="${FL-60}" stroke="#EF476F" stroke-width="2.5"><animate attributeName="opacity" values="1;0;1" dur=".4s" repeatCount="indefinite"/></line>`)},
+  pack:{label:"Empacar",build:()=>base(`<line x1="${CX-42}" y1="${FL-26}" x2="${CX+52}" y2="${FL-26}" stroke="#555" stroke-width="4"/><rect x="${CX-16}" y="${FL-58}" width="42" height="32" rx="4" fill="none" stroke="var(--amazon)" stroke-width="3"/><line x1="${CX}" y1="${FL-60}" x2="${CX+22}" y2="${FL-38}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-22}" y2="${FL-38}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX-16}" y1="${FL-42}" x2="${CX+26}" y2="${FL-42}" stroke="var(--accent)" stroke-width="2.5"><animate attributeName="x2" values="${CX-16};${CX+26}" dur=".9s" repeatCount="indefinite"/></line>`)},
+  carry:{label:"Cargar tote",build:()=>base(`<line x1="${CX}" y1="${FL-66}" x2="${CX-32}" y2="${FL-56}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-66}" x2="${CX+32}" y2="${FL-56}" stroke="var(--fresh)" stroke-width="4"/><rect x="${CX-38}" y="${FL-72}" width="76" height="38" rx="7" fill="none" stroke="var(--accent)" stroke-width="3"/><animateTransform attributeName="transform" type="translate" values="0 0;4 0;0 0;-4 0;0 0" dur=".6s" repeatCount="indefinite" additive="sum"/>`)},
+  push:{label:"Empujar carrito",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+46}" y2="${FL-50}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX+46}" y2="${FL-60}" stroke="var(--fresh)" stroke-width="4"/><rect x="${CX+44}" y="${FL-72}" width="52" height="42" rx="4" fill="none" stroke="#888" stroke-width="2.5"/><circle cx="${CX+60}" cy="${FL-18}" r="7" fill="none" stroke="#888" stroke-width="2.5"/><circle cx="${CX+84}" cy="${FL-18}" r="7" fill="none" stroke="#888" stroke-width="2.5"/><animateTransform attributeName="transform" type="translate" values="0 0;3 0;0 0" dur=".5s" repeatCount="indefinite" additive="sum"/>`)},
+  count:{label:"Contar",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+32}" y2="${FL-52}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-26}" y2="${FL-46}" stroke="var(--fresh)" stroke-width="4"/><rect x="${CX+28}" y="${FL-90}" width="36" height="48" rx="5" fill="none" stroke="var(--accent)" stroke-width="2.5"/><text x="${CX+34}" y="${FL-55}" font-size="13" fill="var(--accent)" font-family="monospace">123</text><animateTransform attributeName="transform" type="translate" values="0 0;2 0;0 0;-2 0;0 0" dur=".7s" repeatCount="indefinite" additive="sum"/>`)},
+  clean:{label:"Limpiar",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+38}" y2="${FL-56}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-24}" y2="${FL-46}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX+36}" y1="${FL-54}" x2="${CX+64}" y2="${FL-18}" stroke="#aaa" stroke-width="5" stroke-linecap="round"/><ellipse cx="${CX+67}" cy="${FL-14}" rx="12" ry="7" fill="#88aaaa" opacity=".5"><animate attributeName="opacity" values=".5;.9;.5" dur=".5s" repeatCount="indefinite"/></ellipse>`)},
+  receive:{label:"Recibir",build:()=>base(`<rect x="${CX-55}" y="${FL-12}" width="58" height="10" rx="2" fill="#6b4226"/><rect x="${CX-48}" y="${FL-44}" width="44" height="32" rx="4" fill="none" stroke="var(--amazon)" stroke-width="3"/><line x1="${CX}" y1="${FL-60}" x2="${CX-32}" y2="${FL-42}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX+26}" y2="${FL-50}" stroke="var(--fresh)" stroke-width="4"/><animateTransform attributeName="transform" type="translate" values="0 0;-3 0;0 0" dur="1s" repeatCount="indefinite" additive="sum"/>`)},
+  celebrate:{label:"Celebrar",build:()=>base(`<path d="M${CX-5} ${FL-76} Q${CX} ${FL-70} ${CX+5} ${FL-76}" fill="none" stroke="var(--fresh)" stroke-width="2"/><line x1="${CX}" y1="${FL-60}" x2="${CX+46}" y2="${FL-102}" stroke="var(--fresh)" stroke-width="4"><animateTransform attributeName="transform" type="rotate" values="0 ${CX} ${FL-60};-22 ${CX} ${FL-60};0 ${CX} ${FL-60};22 ${CX} ${FL-60};0 ${CX} ${FL-60}" dur=".5s" repeatCount="indefinite" additive="sum"/></line><line x1="${CX}" y1="${FL-60}" x2="${CX-26}" y2="${FL-46}" stroke="var(--fresh)" stroke-width="4"/><text x="${CX+52}" y="${FL-112}" font-size="18" fill="var(--accent)">⭐</text><text x="${CX+68}" y="${FL-86}" font-size="14" fill="var(--amazon)">🎉</text>`)},
+  report:{label:"Reportar",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+26}" y2="${FL-56}" stroke="var(--fresh)" stroke-width="4"/><line x1="${CX}" y1="${FL-60}" x2="${CX-22}" y2="${FL-56}" stroke="var(--fresh)" stroke-width="4"/><rect x="${CX+22}" y="${FL-82}" width="34" height="44" rx="4" fill="none" stroke="var(--accent)" stroke-width="2"/><line x1="${CX+27}" y1="${FL-72}" x2="${CX+50}" y2="${FL-72}" stroke="var(--accent)" stroke-width="1.5"/><line x1="${CX+27}" y1="${FL-62}" x2="${CX+50}" y2="${FL-62}" stroke="var(--accent)" stroke-width="1.5"/><line x1="${CX+27}" y1="${FL-52}" x2="${CX+42}" y2="${FL-52}" stroke="var(--accent)" stroke-width="1.5"/>`)},
+  stretch:{label:"Stretching",build:()=>base(`<line x1="${CX}" y1="${FL-60}" x2="${CX+52}" y2="${FL-72}" stroke="var(--fresh)" stroke-width="4"><animateTransform attributeName="transform" type="rotate" values="0 ${CX} ${FL-60};28 ${CX} ${FL-60};0 ${CX} ${FL-60};-28 ${CX} ${FL-60};0 ${CX} ${FL-60}" dur="1.2s" repeatCount="indefinite" additive="sum"/></line><line x1="${CX}" y1="${FL-60}" x2="${CX-52}" y2="${FL-72}" stroke="var(--fresh)" stroke-width="4"><animateTransform attributeName="transform" type="rotate" values="0 ${CX} ${FL-60};-28 ${CX} ${FL-60};0 ${CX} ${FL-60};28 ${CX} ${FL-60};0 ${CX} ${FL-60}" dur="1.2s" repeatCount="indefinite" additive="sum"/></line>`)}
+};
+
+// ============================================================
+//  STORAGE
+// ============================================================
+function load(k,def){ try{const v=localStorage.getItem(k); return v?JSON.parse(v):def;}catch(e){return def;} }
+function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+
+function getRooms()   { return load('af_rooms',['TURNO-A','TURNO-B']); }
+function saveRooms(r) { save('af_rooms',r); }
+function getPin()     { return localStorage.getItem('af_pin')||'1234'; }
+function savePin(p)   { localStorage.setItem('af_pin',p); }
+function getQuestions(){ return load('af_questions',null); }
+function saveQuestions(q){ save('af_questions',q); }
+
+function getGameSettings(){ return load('af_settings',{questionCount:8,timeLimit:15,maxPlayers:15}); }
+function saveGameSettings(s){ save('af_settings',s); }
+
+function getRoomScores(room){ return load('af_scores_'+room,[]); }
+function saveRoomScores(room,s){ save('af_scores_'+room,s); }
+
+function addScore(name,score,room){
+  const scores=getRoomScores(room);
+  scores.push({name,score,time:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})});
+  scores.sort((a,b)=>b.score-a.score);
+  if(scores.length>15) scores.length=15;
+  saveRoomScores(room,scores);
+  return scores.findIndex(s=>s.name===name&&s.score===score)+1;
+}
+
+// ============================================================
+//  DEFAULT QUESTIONS
+// ============================================================
+let QUESTIONS = getQuestions() || [
+  {name:"Stow",           label:"¿Qué tarea realiza?",     anim:"stow",      options:["Stow","Pick","Receive","Pack"],                  answer:"Stow"},
+  {name:"Pick",           label:"¿Qué tarea realiza?",     anim:"pick",      options:["Stow","Pick","Scan","Sort"],                     answer:"Pick"},
+  {name:"Escanear",       label:"¿Qué proceso hace?",      anim:"scan",      options:["Escanear","Empacar","Limpiar","Contar"],          answer:"Escanear"},
+  {name:"Empacar pedido", label:"¿Qué está haciendo?",     anim:"pack",      options:["Empacar pedido","Hacer pick","Contar","Stow"],    answer:"Empacar pedido"},
+  {name:"Recibir",        label:"¿Qué tarea realiza?",     anim:"receive",   options:["Recibir","Empacar","Escanear","Limpiar"],         answer:"Recibir"},
+  {name:"Cargar tote",    label:"¿Qué lleva el asociado?", anim:"carry",     options:["Cargar tote","Empujar carrito","Pack","Pick"],    answer:"Cargar tote"},
+  {name:"Empujar carrito",label:"¿Cómo se desplaza?",      anim:"push",      options:["Empujar carrito","Cargar tote","Stow","Scan"],    answer:"Empujar carrito"},
+  {name:"Celebrar meta",  label:"¿Qué hace el asociado?",  anim:"celebrate", options:["Celebrar meta","Reportar","Limpiar","Stretching"],answer:"Celebrar meta"}
+];
+
+// ============================================================
+//  ADMIN
+// ============================================================
+let selectedAnim='stow', pinUnlocked=false, currentLbRoom=null, editingAction=null;
+let adminDeck=[], adminIndex=0, arbiterActive=false;
+
+function toggleAdmin(){
+  const p=document.getElementById('admin');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')){ buildAnimGrid(); renderList(); renderRoomList(); renderSettings(); renderArbiterPanel(); }
+}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  if(id==='tab-lb'&&pinUnlocked) renderLeaderboard();
+}
+
+// -- Anim grid --
+function buildAnimGrid(){
+  const g=document.getElementById('anim-grid'); g.innerHTML='';
+  Object.entries(ANIMS).forEach(([k,a])=>{
+    const d=document.createElement('div');
+    d.className='anim-opt'+(k===selectedAnim?' selected':'');
+    d.onclick=()=>{ selectedAnim=k; document.querySelectorAll('.anim-opt').forEach(e=>e.classList.remove('selected')); d.classList.add('selected'); };
+    d.innerHTML=`<svg width="60" height="50" viewBox="70 100 100 90"><g>${ANIMS[k].build()}</g></svg><div class="anim-label">${a.label}</div>`;
+    g.appendChild(d);
+  });
+}
+
+// -- Action list (FIX: using data-index buttons) --
+function renderList(){
+  const el=document.getElementById('action-list');
+  if(!QUESTIONS.length){ el.innerHTML='<p style="color:#555;text-align:center;padding:14px;">Sin acciones aún</p>'; return; }
+  el.innerHTML='';
+  QUESTIONS.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.className='action-card';
+    d.innerHTML=`
+      <div class="ac-info">
+        <div class="ac-name">${q.name}</div>
+        <div class="ac-opts">${q.options.map(o=>`<span class="tag">${o}</span>`).join('')}</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-edit="${i}">✏️</button>
+        <button class="del" data-idx="${i}">🗑️</button>
+      </div>`;
+    d.querySelector('[data-edit]').addEventListener('click', function(){ editAction(parseInt(this.getAttribute('data-edit'))); });
+    d.querySelector('.del').addEventListener('click', function(){
+      const idx=parseInt(this.getAttribute('data-idx'));
+      if(confirm(`¿Eliminar "${QUESTIONS[idx].name}"?`)){
+        QUESTIONS.splice(idx,1);
+        saveQuestions(QUESTIONS);
+        renderList();
+      }
+    });
+    el.appendChild(d);
+  });
+}
+
+function editAction(idx){
+  const q=QUESTIONS[idx];
+  editingAction=idx;
+  document.getElementById('a-name').value=q.name;
+  document.getElementById('a-label').value=q.label;
+  document.getElementById('a-wrong').value=q.options.filter(o=>o!==q.name).slice(0,3).join(', ');
+  selectedAnim=q.anim;
+  document.querySelectorAll('.anim-opt').forEach(el=>el.classList.toggle('selected', el.querySelector('.anim-label').textContent===ANIMS[selectedAnim].label));
+  document.getElementById('form-msg').innerHTML=`<div class="msg ok">✏️ Editando acción: ${q.name}. Guarda para actualizar.</div>`;
+}
+
+function saveAction(){
+  const name=document.getElementById('a-name').value.trim();
+  const label=document.getElementById('a-label').value.trim();
+  const wrong=document.getElementById('a-wrong').value.trim();
+  const msg=document.getElementById('form-msg');
+  if(!name||!label){ msg.innerHTML='<div class="msg err">⚠️ Nombre y pregunta son obligatorios</div>'; return; }
+  const wrongOpts=wrong?wrong.split(',').map(s=>s.trim()).filter(Boolean):[];
+  const allOpts=[...new Set([name,...wrongOpts])];
+  const fills=["Hacer pick","Stow","Empacar","Escanear","Limpiar","Contar","Celebrar","Reportar"];
+  while(allOpts.length<4){ const f=fills.find(x=>!allOpts.includes(x)); if(f) allOpts.push(f); else break; }
+  const entry = {name,label,anim:selectedAnim,options:allOpts.slice(0,4),answer:name};
+  if(editingAction!==null){
+    QUESTIONS[editingAction]=entry;
+    editingAction=null;
+    msg.innerHTML='<div class="msg ok">✅ Acción actualizada</div>';
+  } else {
+    QUESTIONS.push(entry);
+    msg.innerHTML='<div class="msg ok">✅ ¡Acción agregada!</div>';
+  }
+  saveQuestions(QUESTIONS);
+  renderList();
+  document.getElementById('a-name').value='';
+  document.getElementById('a-label').value='';
+  document.getElementById('a-wrong').value='';
+  setTimeout(()=>{msg.innerHTML='';},2200);
+}
+
+// -- Room management --
+function renderRoomList(){
+  const rooms=getRooms();
+  const el=document.getElementById('room-list');
+  if(!rooms.length){ el.innerHTML='<p style="color:#555;font-size:.8rem;padding:8px 0;">Sin salas. Agrega una arriba.</p>'; return; }
+  el.innerHTML='';
+  rooms.forEach((r,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#0a1a20;border-radius:10px;padding:9px 12px;margin-bottom:6px;';
+    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><button class="del" data-idx="${i}">🗑️</button>`;
+    d.querySelector('.del').addEventListener('click',function(){
+      const idx=parseInt(this.getAttribute('data-idx'));
+      const rms=getRooms();
+      if(confirm(`¿Eliminar sala "${rms[idx]}"?`)){
+        rms.splice(idx,1); saveRooms(rms); renderRoomList();
+      }
+    });
+    el.appendChild(d);
+  });
+}
+
+function renderSettings(){
+  const settings=getGameSettings();
+  document.getElementById('game-length').value=settings.questionCount;
+  document.getElementById('time-limit').value=settings.timeLimit;
+}
+
+function saveSettings(){
+  const count=parseInt(document.getElementById('game-length').value,10);
+  const limit=parseInt(document.getElementById('time-limit').value,10);
+  const msg=document.getElementById('settings-msg');
+  if(isNaN(count)||count<4||count>20){ msg.innerHTML='<div class="msg err">⚠️ El número de preguntas debe ser entre 4 y 20</div>'; return; }
+  if(isNaN(limit)||limit<10||limit>30){ msg.innerHTML='<div class="msg err">⚠️ El tiempo debe ser entre 10 y 30 segundos</div>'; return; }
+  saveGameSettings({questionCount:count,timeLimit:limit,maxPlayers:15});
+  msg.innerHTML='<div class="msg ok">✅ Configuración guardada</div>';
+  setTimeout(()=>{msg.innerHTML='';},2200);
+}
+
+function startArbiter(){
+  if(!QUESTIONS.length){ alert('Agrega acciones primero en el panel de Acciones.'); return; }
+  const settings=getGameSettings();
+  arbiterActive=true;
+  adminDeck=shuffle(QUESTIONS).slice(0,Math.min(settings.questionCount,QUESTIONS.length));
+  adminIndex=0;
+  renderArbiterPanel();
+  document.getElementById('arb-msg').style.display='none';
+}
+
+function renderArbiterPanel(){
+  const count=adminDeck.length;
+  const question=adminDeck[adminIndex]||null;
+  document.getElementById('arb-total').textContent=count;
+  document.getElementById('arb-number').textContent=count?adminIndex+1:0;
+  document.getElementById('arb-label').textContent=question?question.label:'Presiona Iniciar ronda para ver la primera pregunta.';
+  document.getElementById('arb-svg').innerHTML=question?`<g>${ANIMS[question.anim]?ANIMS[question.anim].build():ANIMS.stow.build()}</g>`:'';
+  document.getElementById('arb-answer').textContent=question?`Respuesta: ${question.answer}`:'Respuesta correcta';
+  document.getElementById('arb-answer').style.background=question?'#ffffff12':'#ffffff10';
+}
+
+function adminNextQuestion(){
+  if(!arbiterActive){ startArbiter(); return; }
+  if(adminIndex+1>=adminDeck.length){
+    document.getElementById('arb-msg').textContent='✅ Ronda finalizada. Reinicia para jugar otra vez.';
+    document.getElementById('arb-msg').className='msg ok';
+    document.getElementById('arb-msg').style.display='block';
+    return;
+  }
+  adminIndex++;
+  renderArbiterPanel();
+  document.getElementById('arb-msg').style.display='none';
+}
+
+function adminShowAnswer(){
+  if(!arbiterActive||!adminDeck.length){
+    document.getElementById('arb-msg').textContent='⚠️ Inicia primero la ronda para mostrar respuestas.';
+    document.getElementById('arb-msg').className='msg err';
+    document.getElementById('arb-msg').style.display='block';
+    return;
+  }
+  const answer=document.getElementById('arb-answer');
+  answer.style.background='#06d6a088';
+  document.getElementById('arb-msg').textContent='✅ Respuesta visible para el árbitro.';
+  document.getElementById('arb-msg').className='msg ok';
+  document.getElementById('arb-msg').style.display='block';
+}
+
+function addRoom(){
+  const inp=document.getElementById('new-room');
+  const code=inp.value.trim().toUpperCase();
+  const msg=document.getElementById('room-msg');
+  if(!code){ msg.innerHTML='<div class="msg err">⚠️ Escribe un código</div>'; setTimeout(()=>{msg.innerHTML='';},2000); return; }
+  const rooms=getRooms();
+  if(rooms.includes(code)){ msg.innerHTML='<div class="msg err">⚠️ Esa sala ya existe</div>'; setTimeout(()=>{msg.innerHTML='';},2000); return; }
+  rooms.push(code); saveRooms(rooms);
+  inp.value='';
+  renderRoomList();
+  msg.innerHTML='<div class="msg ok">✅ Sala agregada</div>';
+  setTimeout(()=>{msg.innerHTML='';},2000);
+}
+
+// -- PIN --
+function pinNext(idx){
+  const el=document.getElementById('p'+idx);
+  if(el.value.length===1){ if(idx<3) document.getElementById('p'+(idx+1)).focus(); else checkPin(); }
+}
+
+function checkPin(){
+  const entered=[0,1,2,3].map(i=>document.getElementById('p'+i).value).join('');
+  const msg=document.getElementById('pin-msg');
+  if(entered===getPin()){
+    pinUnlocked=true;
+    document.getElementById('pin-gate').style.display='none';
+    document.getElementById('lb-content').style.display='block';
+    renderLeaderboard();
+  } else {
+    msg.innerHTML='<div class="msg err">❌ PIN incorrecto</div>';
+    [0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');
+    document.getElementById('p0').focus();
+    setTimeout(()=>{msg.innerHTML='';},2000);
+  }
+}
+
+function changePin(){
+  const np=document.getElementById('new-pin').value.trim();
+  const msg=document.getElementById('pin-change-msg');
+  if(!/^\d{4}$/.test(np)){ msg.innerHTML='<div class="msg err">⚠️ El PIN debe ser de 4 dígitos</div>'; return; }
+  savePin(np);
+  document.getElementById('new-pin').value='';
+  msg.innerHTML='<div class="msg ok">✅ PIN actualizado</div>';
+  setTimeout(()=>{msg.innerHTML='';},2000);
+}
+
+// -- Leaderboard --
+function renderLeaderboard(){
+  const rooms=getRooms();
+  const tabsEl=document.getElementById('room-tabs');
+  tabsEl.innerHTML='';
+  if(!rooms.length){ document.getElementById('lb-rows').innerHTML='<div class="lb-empty">Sin salas creadas aún</div>'; return; }
+  if(!currentLbRoom||!rooms.includes(currentLbRoom)) currentLbRoom=rooms[0];
+  rooms.forEach(r=>{
+    const b=document.createElement('button');
+    b.className='room-tab'+(r===currentLbRoom?' active':'');
+    b.textContent=r;
+    b.onclick=()=>{ currentLbRoom=r; renderLeaderboard(); };
+    tabsEl.appendChild(b);
+  });
+  const scores=getRoomScores(currentLbRoom);
+  const el=document.getElementById('lb-rows');
+  if(!scores.length){ el.innerHTML='<div class="lb-empty">😶 Sin jugadores en esta sala todavía</div>'; return; }
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=scores.map((s,i)=>`
+    <div class="lb-row" style="animation-delay:${i*.05}s">
+      <div class="lb-rank ${i<3?'lb-rank-'+(i+1):'lb-rank-n'}">${i<3?medals[i]:'#'+(i+1)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${s.name}</div>
+        <div class="lb-meta">🕐 ${s.time}</div>
+      </div>
+      <div class="lb-score">${s.score} pts</div>
+    </div>`).join('');
+}
+
+function clearRoomScores(){
+  if(!currentLbRoom) return;
+  if(confirm(`¿Borrar todos los scores de ${currentLbRoom}?`)){
+    saveRoomScores(currentLbRoom,[]);
+    renderLeaderboard();
+  }
+}
+
+// ============================================================
+//  GAME
+// ============================================================
+let pName='', pRoom='', score=0, qIdx=0, timerInt=null, tLeft=15, currentGameLimit=15, answered=false, deck=[];
+const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+const showScreen=id=>{ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+
+function startGame(){
+  const n=document.getElementById('player-name').value.trim();
+  const r=document.getElementById('room-code-input').value.trim().toUpperCase();
+  if(!n){ document.getElementById('player-name').focus(); return; }
+  if(!r){ document.getElementById('room-code-input').focus(); return; }
+  const rooms=getRooms();
+  if(!rooms.includes(r)){
+    alert(`La sala "${r}" no existe.\nPide el código correcto a tu manager.`); return;
+  }
+  if(!QUESTIONS.length){ alert('El admin no ha cargado acciones aún. Toca ⚙️'); return; }
+  const settings=getGameSettings();
+  currentGameLimit=settings.timeLimit;
+  pName=n; pRoom=r; score=0; qIdx=0;
+  deck=shuffle(QUESTIONS).slice(0, Math.min(settings.questionCount, QUESTIONS.length));
+  document.getElementById('game-room-badge').textContent='🚪 '+r;
+  showScreen('s-game');
+  loadQ();
+}
+
+function loadQ(){
+  if(qIdx>=deck.length){ endGame(); return; }
+  answered=false;
+  const q=deck[qIdx];
+  document.getElementById('prog').style.width=`${qIdx/deck.length*100}%`;
+  document.getElementById('q-cnt').textContent=`Pregunta ${qIdx+1} de ${deck.length}`;
+  document.getElementById('q-lbl').textContent=q.label;
+  document.getElementById('sm-svg').innerHTML=`<g>${ANIMS[q.anim]?ANIMS[q.anim].build():ANIMS.stow.build()}</g>`;
+  const opts=document.getElementById('opts'); opts.innerHTML='';
+  shuffle(q.options).forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='opt-btn'; b.textContent=opt;
+    b.onclick=()=>pick(opt,q.answer);
+    opts.appendChild(b);
+  });
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInt); tLeft=currentGameLimit; updateTimer();
+  timerInt=setInterval(()=>{ tLeft--; updateTimer(); if(tLeft<=0){clearInterval(timerInt);if(!answered)timeout();} },1000);
+}
+
+function updateTimer(){
+  const arc=document.getElementById('t-arc'),num=document.getElementById('t-num');
+  arc.style.strokeDashoffset=283*(1-tLeft/currentGameLimit);
+  const warning = currentGameLimit>20?Math.ceil(currentGameLimit*0.4):4;
+  arc.style.stroke=tLeft>warning?'var(--fresh)':tLeft>Math.ceil(warning/2)?'var(--accent)':'var(--danger)';
+  num.textContent=tLeft; num.style.color=tLeft<=warning?'var(--danger)':'var(--white)';
+}
+
+function pick(chosen,correct){
+  if(answered) return;
+  answered=true; clearInterval(timerInt);
+  const pts=chosen===correct?Math.max(10,tLeft*10):0;
+  score+=pts;
+  document.getElementById('score-disp').textContent=score;
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===correct) b.classList.add('correct');
+    else if(b.textContent===chosen&&chosen!==correct) b.classList.add('wrong');
+  });
+  doFlash(chosen===correct, chosen===correct?`+${pts} pts ✅`:'❌ ¡Fallaste!');
+  setTimeout(()=>{ qIdx++; loadQ(); },1200);
+}
+
+function timeout(){
+  answered=true;
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===deck[qIdx].answer) b.classList.add('correct');
+  });
+  doFlash(false,'⏰ ¡Tiempo!');
+  setTimeout(()=>{ qIdx++; loadQ(); },1200);
+}
+
+function doFlash(ok,txt){
+  const el=document.getElementById('fb');
+  el.className='feedback '+(ok?'ok':'bad')+' show';
+  el.textContent=txt;
+  setTimeout(()=>{el.className='feedback';},680);
+}
+
+function endGame(){
+  clearInterval(timerInt);
+  const pos=addScore(pName,score,pRoom);
+  const total=deck.length*currentGameLimit*10, pct=score/total;
+  let t='🥉',r='Buen intento, ¡sigue practicando!';
+  if(pct>=.9){t='🏆';r='¡Eres el campeón del site! 🔥';}
+  else if(pct>=.7){t='🥇';r='¡Excelente asociado! ⭐';}
+  else if(pct>=.5){t='🥈';r='¡Muy bien! ¡Casi lo logras!';}
+  document.getElementById('r-trophy').textContent=t;
+  document.getElementById('r-name').textContent=pName;
+  document.getElementById('r-score').textContent=score+' pts';
+  document.getElementById('r-rank').textContent=r;
+  const all=getRoomScores(pRoom);
+  document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en tu equipo`:'¡Primero en jugar en tu sala!';
+  document.getElementById('r-room-label').textContent='🚪 Sala: '+pRoom;
+  showScreen('s-result');
+}
+
+function restart(){ showScreen('s-welcome'); }
+</script>
+</body>
+</html>

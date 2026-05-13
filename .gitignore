@@ -1,0 +1,13 @@
+# Node / general
+node_modules/
+.DS_Store
+firebase-debug.log
+
+# VS Code
+.vscode/
+
+# System files
+Thumbs.db
+
+# Firebase local emulator files
+.firebaserc.local
