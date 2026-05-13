@@ -40,3 +40,16 @@ Juego de preguntas personalizable para capacitaciones rápidas sobre seguridad y
 - También incluye una plantilla de GitHub Actions en `.github/workflows/firebase-hosting.yml`.
 - Para habilitar el despliegue automático, agrega el secreto `FIREBASE_SERVICE_ACCOUNT` en tu repositorio de GitHub.
 - Usa `index.html` como entrada principal para el hosting.
+
+## Subir a GitHub
+
+1. Crea un repositorio nuevo en GitHub.
+2. En tu terminal, ejecuta:
+
+```bash
+git branch -M main
+git remote add origin https://github.com/<tu-usuario>/<tu-repo>.git
+git push -u origin main
+```
+
+3. Luego activa GitHub Actions y agrega el secreto `FIREBASE_SERVICE_ACCOUNT`.
