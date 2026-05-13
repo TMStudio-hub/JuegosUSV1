@@ -33,7 +33,8 @@ Juego de preguntas personalizable para capacitaciones rápidas sobre seguridad y
 
 - El juego es estático y funciona sin servidor para la mayor parte de la experiencia.
 - El leaderboard ahora puede sincronizar resultados usando Firebase Realtime Database.
-- Si necesitas que varios dispositivos compartan una misma sala en tiempo real, recomienda alojar el archivo en un servidor interno y usar el mismo archivo en cada navegador.
+- Las salas creadas por el admin se comparten mediante Firebase, de modo que otros dispositivos pueden ver el mismo código sin crearlo localmente.
+- El administrador puede generar automáticamente códigos de sala y compartirlos con QR o enlace de sala.
 
 ## Despliegue con GitHub y Firebase
 

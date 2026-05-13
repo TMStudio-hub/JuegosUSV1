@@ -49,6 +49,8 @@ Este juego sirve para capacitar a equipos de Amazon Fresh en seguridad y operaci
 ## 6. Consejos para sesiones grupales
 
 - Si hay más de una sala, crea códigos diferentes como `TURNO-A`, `TURNO-B`, etc.
+- El administrador puede generar un código de sala automático en la pestaña de `⚙️ Config`.
+- Al compartir el enlace o QR, los jugadores abrirán el juego con ese código ya completo.
 - Para una mejor experiencia, muestra el modo árbitro en una pantalla compartida.
 - Antes de iniciar el juego, verifica que las preguntas sean claras y adecuadas.
 - Usa el botón de edición para corregir preguntas sin tener que eliminarlas y recrearlas.

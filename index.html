@@ -253,13 +253,20 @@
       <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Las salas son los códigos que los equipos usan al entrar. El admin crea las salas y cada una guarda sus propios scores.</p>
       <div class="input-wrap">
         <label>Nueva sala (código)</label>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="new-room" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="new-room" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;flex:1;">
           <button class="btn btn-secondary btn-sm" style="margin:0;white-space:nowrap;max-width:100px;" onclick="addRoom()">+ Agregar</button>
+          <button class="btn btn-ghost btn-sm" style="margin:0;white-space:nowrap;max-width:100px;" onclick="generateRoomCode()">🎲 Generar</button>
         </div>
       </div>
       <div id="room-list"></div>
       <div id="room-msg"></div>
+      <div id="room-share" style="display:none;margin-top:12px;">
+        <div class="section-lbl">🔗 Compartir sala</div>
+        <input type="text" id="room-share-link" readonly style="width:100%;padding:10px;border-radius:12px;border:2px solid #ffffff20;background:#111;color:#fff;">
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="copyShareLink()">Copiar enlace</button>
+        <div id="room-qr" style="margin-top:10px;text-align:center;"></div>
+      </div>
     </div>
     <div class="card">
       <div class="section-lbl">� Configuración del juego</div>
@@ -412,14 +419,29 @@ function load(k,def){ try{const v=localStorage.getItem(k); return v?JSON.parse(v
 function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
 
 function getRooms()   { return load('af_rooms',['TURNO-A','TURNO-B']); }
-function saveRooms(r) { save('af_rooms',r); }
+async function saveRooms(r) {
+  save('af_rooms',r);
+  if(fbAvailable){
+    try{ await firebaseDB.ref('rooms').set(r); }catch(e){ console.warn('Firebase saveRooms error',e); }
+  }
+}
 function getPin()     { return localStorage.getItem('af_pin')||'1234'; }
 function savePin(p)   { localStorage.setItem('af_pin',p); }
 function getQuestions(){ return load('af_questions',null); }
-function saveQuestions(q){ save('af_questions',q); }
+async function saveQuestions(q){
+  save('af_questions',q);
+  if(fbAvailable){
+    try{ await firebaseDB.ref('questions').set(q); }catch(e){ console.warn('Firebase saveQuestions error',e); }
+  }
+}
 
 function getGameSettings(){ return load('af_settings',{questionCount:8,timeLimit:15,maxPlayers:15}); }
-function saveGameSettings(s){ save('af_settings',s); }
+async function saveGameSettings(s){
+  save('af_settings',s);
+  if(fbAvailable){
+    try{ await firebaseDB.ref('settings').set(s); }catch(e){ console.warn('Firebase saveGameSettings error',e); }
+  }
+}
 
 function getRoomPath(room){ return 'scores/' + encodeURIComponent(room.trim().replace(/\s+/g,'_')); }
 async function getRoomScores(room){
@@ -454,6 +476,73 @@ async function addScore(name,score,room){
   if(scores.length>15) scores.length=15;
   await saveRoomScores(room,scores);
   return scores.findIndex(s=>s.name===name&&s.score===score)+1;
+}
+
+function getQueryParam(name){
+  const url = new URL(window.location.href);
+  return url.searchParams.get(name);
+}
+
+function populateRoomFromUrl(){
+  const room = getQueryParam('room');
+  if(room){ document.getElementById('room-code-input').value = room.toUpperCase(); }
+}
+
+function generateRoomCode(){
+  const code = 'USV-' + Math.random().toString(36).substring(2,7).toUpperCase();
+  document.getElementById('new-room').value = code;
+}
+
+function buildShareLink(room){
+  const url = new URL(window.location.href);
+  url.searchParams.set('room', room);
+  return url.toString();
+}
+
+function copyShareLink(){
+  const linkEl = document.getElementById('room-share-link');
+  linkEl.select();
+  document.execCommand('copy');
+  alert('Enlace copiado al portapapeles');
+}
+
+function showRoomShare(room){
+  const link = buildShareLink(room);
+  document.getElementById('room-share-link').value = link;
+  document.getElementById('room-qr').innerHTML = `<img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(link)}" alt="QR Sala">`;
+  document.getElementById('room-share').style.display = 'block';
+}
+
+function initFirebaseSync(){
+  if(!fbAvailable) return;
+  firebaseDB.ref('rooms').on('value', snapshot=>{
+    const data = snapshot.val();
+    if(data){
+      const rooms = Array.isArray(data)?data:Object.values(data);
+      if(rooms.length){
+        save('af_rooms',rooms);
+        if(typeof renderRoomList==='function') renderRoomList();
+      }
+    }
+  });
+  firebaseDB.ref('questions').on('value', snapshot=>{
+    const data = snapshot.val();
+    if(data){
+      const questions = Array.isArray(data)?data:Object.values(data);
+      if(questions.length){
+        QUESTIONS = questions;
+        save('af_questions',QUESTIONS);
+        if(typeof renderList==='function') renderList();
+      }
+    }
+  });
+  firebaseDB.ref('settings').on('value', snapshot=>{
+    const data = snapshot.val();
+    if(data){
+      save('af_settings',data);
+      if(typeof renderSettings==='function') renderSettings();
+    }
+  });
 }
 
 // ============================================================
@@ -579,7 +668,12 @@ function renderRoomList(){
   rooms.forEach((r,i)=>{
     const d=document.createElement('div');
     d.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#0a1a20;border-radius:10px;padding:9px 12px;margin-bottom:6px;';
-    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><button class="del" data-idx="${i}">🗑️</button>`;
+    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><div style="display:flex;gap:6px;align-items:center;"><button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-share="${i}">🔗</button><button class="del" data-idx="${i}">🗑️</button></div>`;
+    d.querySelector('[data-share]').addEventListener('click',function(){
+      const idx=parseInt(this.getAttribute('data-share'));
+      const rooms=getRooms();
+      showRoomShare(rooms[idx]);
+    });
     d.querySelector('.del').addEventListener('click',function(){
       const idx=parseInt(this.getAttribute('data-idx'));
       const rms=getRooms();
@@ -666,6 +760,7 @@ function addRoom(){
   rooms.push(code); saveRooms(rooms);
   inp.value='';
   renderRoomList();
+  showRoomShare(code);
   msg.innerHTML='<div class="msg ok">✅ Sala agregada</div>';
   setTimeout(()=>{msg.innerHTML='';},2000);
 }
@@ -851,6 +946,11 @@ async function endGame(){
 }
 
 function restart(){ showScreen('s-welcome'); }
+
+window.addEventListener('load', ()=>{
+  populateRoomFromUrl();
+  initFirebaseSync();
+});
 </script>
 </body>
 </html>
