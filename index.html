@@ -305,13 +305,17 @@
   <div class="tab-content" id="tab-arb">
     <div class="card">
       <div class="section-lbl">🎤 Control del árbitro</div>
-      <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Usa esta vista para llevar la sesión en vivo. Presenta la pregunta, muestra la respuesta correcta y controla el ritmo del juego.</p>
-      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:120px;" onclick="startArbiter()">Iniciar ronda</button>
-        <button class="btn btn-primary btn-sm" style="flex:1;min-width:120px;" onclick="adminNextQuestion()">Siguiente pregunta</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:120px;" onclick="adminShowAnswer()">Mostrar respuesta</button>
+      <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Usa esta vista para abrir el lobby de sala, iniciar el juego y controlar la proyección.</p>
+      <div class="input-wrap">
+        <label>Sala seleccionada</label>
+        <select id="arb-room-select" style="width:100%;"></select>
       </div>
-      <div class="msg" id="arb-msg" style="margin-top:12px;display:none;"></div>
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:120px;" onclick="activateSession()">Abrir lobby</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;min-width:120px;" onclick="beginSession()">Iniciar partida</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:120px;" onclick="openPresenterFromSelect()">Presentador</button>
+      </div>
+      <div class="msg" id="arb-session-msg" style="margin-top:12px;display:none;"></div>
     </div>
     <div class="card" style="text-align:center;">
       <div class="score-badge" style="margin-bottom:12px;">Pregunta <span id="arb-number">0</span> / <span id="arb-total">0</span></div>
@@ -344,6 +348,19 @@
   </div>
   <button class="btn btn-primary" onclick="startGame()">¡Jugar! 🎮</button>
   <p class="hint" style="margin-top:12px;">Admin: toca ⚙️ para configurar</p>
+</div>
+
+<!-- ===== LOBBY ===== -->
+<div class="screen" id="s-lobby">
+  <div class="logo-title">Sala de espera</div>
+  <div class="logo-sub">Conecta al equipo y espera al inicio</div>
+  <div class="card">
+    <div class="section-lbl">Sala <span id="lobby-room" style="color:var(--accent);"></span></div>
+    <p style="margin-bottom:12px;">Jugador: <strong id="lobby-name"></strong></p>
+    <div id="lobby-players" class="lb-empty">Esperando jugadores...</div>
+    <p class="hint" style="margin-top:12px;">El juego comenzará cuando el árbitro presione iniciar.</p>
+    <button class="btn btn-ghost" style="margin-top:14px;" onclick="restart()">Salir de la sala</button>
+  </div>
 </div>
 
 <!-- ===== GAME ===== -->
@@ -501,9 +518,16 @@ function buildShareLink(room){
 
 function copyShareLink(){
   const linkEl = document.getElementById('room-share-link');
-  linkEl.select();
-  document.execCommand('copy');
-  alert('Enlace copiado al portapapeles');
+  if(!linkEl) return;
+  const text = linkEl.value;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=> alert('Enlace copiado al portapapeles'))
+      .catch(()=>{ linkEl.select(); document.execCommand('copy'); alert('Enlace copiado al portapapeles'); });
+  } else {
+    linkEl.select();
+    document.execCommand('copy');
+    alert('Enlace copiado al portapapeles');
+  }
 }
 
 function showRoomShare(room){
@@ -511,6 +535,96 @@ function showRoomShare(room){
   document.getElementById('room-share-link').value = link;
   document.getElementById('room-qr').innerHTML = `<img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(link)}" alt="QR Sala">`;
   document.getElementById('room-share').style.display = 'block';
+}
+
+function openPresenter(room){
+  if(!room){ alert('Selecciona o crea primero una sala para el modo presentador.'); return; }
+  const url=new URL(window.location.href);
+  url.searchParams.set('room',room);
+  url.searchParams.set('mode','host');
+  window.open(url.toString(),'presenter');
+}
+
+function joinLobby(room,name){
+  pName=name; pRoom=room;
+  if(fbAvailable){
+    const playerId = `p_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+    const sessionRef = firebaseDB.ref(`sessions/${encodeURIComponent(room)}/players/${playerId}`);
+    sessionRef.set({name,joined:Date.now()});
+    sessionRef.onDisconnect().remove();
+    firebaseDB.ref(`sessions/${encodeURIComponent(room)}/started`).on('value', snap=>{
+      const started = snap.val();
+      if(started){
+        sessionRef.off();
+        startGameSession(room,name);
+      }
+    });
+    firebaseDB.ref(`sessions/${encodeURIComponent(room)}/players`).on('value', snap=>{
+      const data=snap.val();
+      renderLobbyPlayers(data);
+    });
+  }
+  showScreen('s-lobby');
+  document.getElementById('lobby-room').textContent = room;
+  document.getElementById('lobby-name').textContent = name;
+}
+
+function renderLobbyPlayers(data){
+  const list = data ? Object.values(data).map(p=>p.name) : [];
+  const el=document.getElementById('lobby-players');
+  el.innerHTML = list.length ? list.map(n=>`<div class="lb-row" style="justify-content:center;padding:10px 14px;">${n}</div>`).join('') : '<div class="lb-empty">Esperando jugadores...</div>';
+}
+
+function startGameSession(room,name){
+  const settings=getGameSettings();
+  currentGameLimit=settings.timeLimit;
+  score=0; qIdx=0;
+  deck=shuffle(QUESTIONS).slice(0, Math.min(settings.questionCount, QUESTIONS.length));
+  document.getElementById('game-room-badge').textContent='🚪 '+room;
+  showScreen('s-game');
+  loadQ();
+}
+
+function getSelectedRoom(){
+  const sel = document.getElementById('arb-room-select');
+  return sel ? sel.value.trim().toUpperCase() : '';
+}
+
+function renderRoomSelect(){
+  const rooms = getRooms();
+  const sel = document.getElementById('arb-room-select');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = rooms.length ? rooms.map(r=>`<option value="${r}">${r}</option>`).join('') : '<option value="">-- sin salas --</option>';
+  if(rooms.includes(current)) sel.value=current;
+}
+
+function openPresenterFromSelect(){
+  const room = getSelectedRoom();
+  if(!room){ alert('Selecciona una sala primero.'); return; }
+  openPresenter(room);
+}
+
+function activateSession(){
+  const room = getSelectedRoom();
+  if(!room){ alert('Selecciona una sala en el panel del árbitro.'); return; }
+  if(!fbAvailable){ alert('Firebase no disponible.'); return; }
+  firebaseDB.ref(`sessions/${encodeURIComponent(room)}`).update({started:false});
+  const msg=document.getElementById('arb-session-msg');
+  msg.textContent = `Lobby abierto para ${room}. Los jugadores pueden entrar con el código o enlace.`;
+  msg.className='msg ok';
+  msg.style.display='block';
+}
+
+function beginSession(){
+  const room = getSelectedRoom();
+  if(!room){ alert('Selecciona una sala en el panel del árbitro.'); return; }
+  if(!fbAvailable){ alert('Firebase no disponible.'); return; }
+  firebaseDB.ref(`sessions/${encodeURIComponent(room)}/started`).set(true);
+  const msg=document.getElementById('arb-session-msg');
+  msg.textContent = `Partida iniciada en ${room}. ¡A jugar!`;
+  msg.className='msg ok';
+  msg.style.display='block';
 }
 
 function initFirebaseSync(){
@@ -522,6 +636,7 @@ function initFirebaseSync(){
       if(rooms.length){
         save('af_rooms',rooms);
         if(typeof renderRoomList==='function') renderRoomList();
+        if(typeof renderRoomSelect==='function') renderRoomSelect();
       }
     }
   });
@@ -668,11 +783,16 @@ function renderRoomList(){
   rooms.forEach((r,i)=>{
     const d=document.createElement('div');
     d.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#0a1a20;border-radius:10px;padding:9px 12px;margin-bottom:6px;';
-    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><div style="display:flex;gap:6px;align-items:center;"><button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-share="${i}">🔗</button><button class="del" data-idx="${i}">🗑️</button></div>`;
+    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><div style="display:flex;gap:6px;align-items:center;"><button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-share="${i}">🔗</button><button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-present="${i}">📽</button><button class="del" data-idx="${i}">🗑️</button></div>`;
     d.querySelector('[data-share]').addEventListener('click',function(){
       const idx=parseInt(this.getAttribute('data-share'));
       const rooms=getRooms();
       showRoomShare(rooms[idx]);
+    });
+    d.querySelector('[data-present]').addEventListener('click',function(){
+      const idx=parseInt(this.getAttribute('data-present'));
+      const rooms=getRooms();
+      openPresenter(rooms[idx]);
     });
     d.querySelector('.del').addEventListener('click',function(){
       const idx=parseInt(this.getAttribute('data-idx'));
@@ -683,6 +803,7 @@ function renderRoomList(){
     });
     el.appendChild(d);
   });
+  if(typeof renderRoomSelect==='function') renderRoomSelect();
 }
 
 function renderSettings(){
@@ -761,6 +882,7 @@ function addRoom(){
   inp.value='';
   renderRoomList();
   showRoomShare(code);
+  if(typeof renderRoomSelect==='function') renderRoomSelect();
   msg.innerHTML='<div class="msg ok">✅ Sala agregada</div>';
   setTimeout(()=>{msg.innerHTML='';},2000);
 }
@@ -851,17 +973,15 @@ function startGame(){
   if(!n){ document.getElementById('player-name').focus(); return; }
   if(!r){ document.getElementById('room-code-input').focus(); return; }
   const rooms=getRooms();
-  if(!rooms.includes(r)){
-    alert(`La sala "${r}" no existe.\nPide el código correcto a tu manager.`); return;
+  const roomExistsLocally=rooms.includes(r);
+  if(!roomExistsLocally && fbAvailable){
+    roomExists(r).then(exists=>{
+      if(!exists){ alert(`La sala "${r}" no existe.\nPide el código correcto a tu manager.`); return; }
+      joinLobby(r,n);
+    });
+  } else {
+    joinLobby(r,n);
   }
-  if(!QUESTIONS.length){ alert('El admin no ha cargado acciones aún. Toca ⚙️'); return; }
-  const settings=getGameSettings();
-  currentGameLimit=settings.timeLimit;
-  pName=n; pRoom=r; score=0; qIdx=0;
-  deck=shuffle(QUESTIONS).slice(0, Math.min(settings.questionCount, QUESTIONS.length));
-  document.getElementById('game-room-badge').textContent='🚪 '+r;
-  showScreen('s-game');
-  loadQ();
 }
 
 function loadQ(){
@@ -949,6 +1069,7 @@ function restart(){ showScreen('s-welcome'); }
 
 window.addEventListener('load', ()=>{
   populateRoomFromUrl();
+  renderRoomSelect();
   initFirebaseSync();
 });
 </script>
