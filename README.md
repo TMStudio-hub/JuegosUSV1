@@ -31,7 +31,8 @@ Juego de preguntas personalizable para capacitaciones rápidas sobre seguridad y
 
 ## Notas técnicas
 
-- El juego es estático y funciona sin servidor.
+- El juego es estático y funciona sin servidor para la mayor parte de la experiencia.
+- El leaderboard ahora puede sincronizar resultados usando Firebase Realtime Database.
 - Si necesitas que varios dispositivos compartan una misma sala en tiempo real, recomienda alojar el archivo en un servidor interno y usar el mismo archivo en cada navegador.
 
 ## Despliegue con GitHub y Firebase

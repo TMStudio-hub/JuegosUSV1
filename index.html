@@ -5,6 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Amazon Fresh – ¡Adivina la Acción!</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.26.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.26.0/firebase-database-compat.js"></script>
+<script>
+  const FIREBASE_ENABLED = true;
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCCCU44zpdD1cvPNgfWP0C4mxEA1esvwh0",
+    authDomain: "juego-dia-del-trabajo.firebaseapp.com",
+    databaseURL: "https://juego-dia-del-trabajo-default-rtdb.firebaseio.com",
+    projectId: "juego-dia-del-trabajo",
+    storageBucket: "juego-dia-del-trabajo.firebasestorage.app",
+    messagingSenderId: "533482086934",
+    appId: "1:533482086934:web:bdcdf0363077cd688ecb37",
+    measurementId: "G-D29H9X727T"
+  };
+  let firebaseDB = null;
+  let fbAvailable = false;
+  try {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    firebaseDB = firebase.database();
+    fbAvailable = true;
+  } catch (error) {
+    console.warn('Firebase no disponible:', error);
+    fbAvailable = false;
+  }
+</script>
 <style>
   :root {
     --fresh: #00A8A2; --amazon: #FF9900; --dark: #0F2027;
@@ -394,15 +421,38 @@ function saveQuestions(q){ save('af_questions',q); }
 function getGameSettings(){ return load('af_settings',{questionCount:8,timeLimit:15,maxPlayers:15}); }
 function saveGameSettings(s){ save('af_settings',s); }
 
-function getRoomScores(room){ return load('af_scores_'+room,[]); }
-function saveRoomScores(room,s){ save('af_scores_'+room,s); }
+function getRoomPath(room){ return 'scores/' + encodeURIComponent(room.trim().replace(/\s+/g,'_')); }
+async function getRoomScores(room){
+  if(fbAvailable){
+    try{
+      const snapshot = await firebaseDB.ref(getRoomPath(room)).once('value');
+      const data = snapshot.val();
+      if(!data) return [];
+      const scores = Object.values(data);
+      scores.sort((a,b)=>b.score-a.score);
+      return scores.slice(0,15);
+    } catch(e){ console.warn('Firebase getRoomScores error',e); }
+  }
+  return load('af_scores_'+room,[]);
+}
+async function saveRoomScores(room,s){
+  if(fbAvailable){
+    try{
+      const payload = {};
+      s.forEach((item,i)=>payload[i]=item);
+      await firebaseDB.ref(getRoomPath(room)).set(payload);
+      return;
+    } catch(e){ console.warn('Firebase saveRoomScores error',e); }
+  }
+  save('af_scores_'+room,s);
+}
 
-function addScore(name,score,room){
-  const scores=getRoomScores(room);
+async function addScore(name,score,room){
+  const scores = await getRoomScores(room);
   scores.push({name,score,time:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})});
   scores.sort((a,b)=>b.score-a.score);
   if(scores.length>15) scores.length=15;
-  saveRoomScores(room,scores);
+  await saveRoomScores(room,scores);
   return scores.findIndex(s=>s.name===name&&s.score===score)+1;
 }
 
@@ -653,7 +703,7 @@ function changePin(){
 }
 
 // -- Leaderboard --
-function renderLeaderboard(){
+async function renderLeaderboard(){
   const rooms=getRooms();
   const tabsEl=document.getElementById('room-tabs');
   tabsEl.innerHTML='';
@@ -666,7 +716,7 @@ function renderLeaderboard(){
     b.onclick=()=>{ currentLbRoom=r; renderLeaderboard(); };
     tabsEl.appendChild(b);
   });
-  const scores=getRoomScores(currentLbRoom);
+  const scores=await getRoomScores(currentLbRoom);
   const el=document.getElementById('lb-rows');
   if(!scores.length){ el.innerHTML='<div class="lb-empty">😶 Sin jugadores en esta sala todavía</div>'; return; }
   const medals=['🥇','🥈','🥉'];
@@ -681,10 +731,14 @@ function renderLeaderboard(){
     </div>`).join('');
 }
 
-function clearRoomScores(){
+async function clearRoomScores(){
   if(!currentLbRoom) return;
   if(confirm(`¿Borrar todos los scores de ${currentLbRoom}?`)){
-    saveRoomScores(currentLbRoom,[]);
+    if(fbAvailable){
+      try{ await firebaseDB.ref(getRoomPath(currentLbRoom)).remove(); }
+      catch(e){ console.warn('Firebase remove failed',e); }
+    }
+    await saveRoomScores(currentLbRoom,[]);
     renderLeaderboard();
   }
 }
@@ -778,9 +832,9 @@ function doFlash(ok,txt){
   setTimeout(()=>{el.className='feedback';},680);
 }
 
-function endGame(){
+async function endGame(){
   clearInterval(timerInt);
-  const pos=addScore(pName,score,pRoom);
+  const pos=await addScore(pName,score,pRoom);
   const total=deck.length*currentGameLimit*10, pct=score/total;
   let t='🥉',r='Buen intento, ¡sigue practicando!';
   if(pct>=.9){t='🏆';r='¡Eres el campeón del site! 🔥';}
@@ -790,7 +844,7 @@ function endGame(){
   document.getElementById('r-name').textContent=pName;
   document.getElementById('r-score').textContent=score+' pts';
   document.getElementById('r-rank').textContent=r;
-  const all=getRoomScores(pRoom);
+  const all=await getRoomScores(pRoom);
   document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en tu equipo`:'¡Primero en jugar en tu sala!';
   document.getElementById('r-room-label').textContent='🚪 Sala: '+pRoom;
   showScreen('s-result');

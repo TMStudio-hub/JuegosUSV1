@@ -43,7 +43,7 @@ Este juego sirve para capacitar a equipos de Amazon Fresh en seguridad y operaci
 ## 5. Resultados y clasificaciones
 
 - La pestaña `🏆 Resultados` del administrador muestra el ranking por sala.
-- El sistema guarda los marcadores de cada sala en el navegador.
+- El sistema guarda los marcadores de cada sala en Firebase Realtime Database cuando está disponible.
 - El marcador retiene las mejores 15 puntuaciones por sala.
 
 ## 6. Consejos para sesiones grupales
