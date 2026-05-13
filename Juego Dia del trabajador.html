@@ -264,7 +264,10 @@
       <div id="room-share" style="display:none;margin-top:12px;">
         <div class="section-lbl">🔗 Compartir sala</div>
         <input type="text" id="room-share-link" readonly style="width:100%;padding:10px;border-radius:12px;border:2px solid #ffffff20;background:#111;color:#fff;">
-        <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="copyShareLink()">Copiar enlace</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="copyShareLink()">Copiar enlace</button>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="openPresenter(document.getElementById('new-room').value.trim().toUpperCase())">Abrir proyector</button>
+        </div>
         <div id="room-qr" style="margin-top:10px;text-align:center;"></div>
       </div>
     </div>
@@ -322,6 +325,23 @@
       <div style="margin-top:12px;">
         <span class="tag" id="arb-answer" style="background:#ffffff10;color:#aaa;">Respuesta correcta</span>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="s-presenter">
+  <div class="logo-title">Presentador</div>
+  <div class="logo-sub">Proyección de preguntas</div>
+  <div class="card" style="width:100%;max-width:520px;text-align:center;">
+    <div class="section-lbl">Sala: <span id="presenter-room" style="color:var(--accent);"></span></div>
+    <div class="score-badge" style="margin-bottom:12px;"> <span id="presenter-q-count">Pregunta 0 de 0</span> </div>
+    <div class="q-label" id="presenter-q" style="font-size:1.4rem;min-height:72px;"></div>
+    <div id="presenter-options" class="options-grid" style="margin-top:14px;"></div>
+    <div id="presenter-answer" class="hint" style="opacity:0;transition:opacity .3s;margin-top:16px;">Respuesta correcta:</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;">
+      <button class="btn btn-secondary btn-sm" style="flex:1;min-width:140px;" onclick="presenterReveal()">Mostrar respuesta</button>
+      <button class="btn btn-primary btn-sm" style="flex:1;min-width:140px;" onclick="presenterNext()">Siguiente pregunta</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1;min-width:140px;" onclick="restart()">Salir</button>
     </div>
   </div>
 </div>
@@ -545,6 +565,142 @@ function initFirebaseSync(){
   });
 }
 
+async function roomExists(room){
+  if(!fbAvailable) return false;
+  try{
+    const snapshot = await firebaseDB.ref('rooms').once('value');
+    const data = snapshot.val();
+    if(!data) return false;
+    const list=Array.isArray(data)?data:Object.values(data);
+    return list.map(String).includes(room);
+  } catch(e){ console.warn('Firebase roomExists error',e); return false; }
+}
+
+function openPresenter(room){
+  if(!room){ alert('Selecciona o crea primero una sala para el modo presentador.'); return; }
+  const url=new URL(window.location.href);
+  url.searchParams.set('room',room);
+  url.searchParams.set('mode','host');
+  window.open(url.toString(),'_blank');
+}
+
+function openPresenterWindow(room){
+  if(!room){ alert('Selecciona o crea primero una sala para el modo presentador.'); return; }
+  const url=new URL(window.location.href);
+  url.searchParams.set('room',room);
+  url.searchParams.set('mode','host');
+  window.open(url.toString(),'presenter');
+}
+
+function populateRoomFromUrl(){
+  const room = getQueryParam('room');
+  if(room){ document.getElementById('room-code-input').value = room.toUpperCase(); }
+}
+
+function getQueryParam(name){
+  const url = new URL(window.location.href);
+  return url.searchParams.get(name);
+}
+
+function copyShareLink(){
+  const linkEl = document.getElementById('room-share-link');
+  const text = linkEl.value;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=> alert('Enlace copiado al portapapeles'))
+      .catch(()=>{ linkEl.select(); document.execCommand('copy'); alert('Enlace copiado al portapapeles'); });
+  } else {
+    linkEl.select(); document.execCommand('copy'); alert('Enlace copiado al portapapeles');
+  }
+}
+
+function showRoomShare(room){
+  const link = buildShareLink(room);
+  document.getElementById('room-share-link').value = link;
+  document.getElementById('room-qr').innerHTML = `<img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(link)}" alt="QR Sala">`;
+  document.getElementById('room-share').style.display = 'block';
+}
+
+function buildShareLink(room){
+  const url = new URL(window.location.href);
+  url.searchParams.set('room', room);
+  return url.toString();
+}
+
+function initFirebaseSync(){
+  if(!fbAvailable) return;
+  firebaseDB.ref('rooms').on('value', snapshot=>{
+    const data = snapshot.val();
+    if(data){
+      const rooms = Array.isArray(data)?data:Object.values(data);
+      if(rooms.length){
+        save('af_rooms',rooms);
+        if(typeof renderRoomList==='function') renderRoomList();
+      }
+    }
+  });
+  firebaseDB.ref('questions').on('value', snapshot=>{
+    const data = snapshot.val();
+    if(data){
+      const questions = Array.isArray(data)?data:Object.values(data);
+      if(questions.length){
+        QUESTIONS = questions;
+        save('af_questions',QUESTIONS);
+        if(typeof renderList==='function') renderList();
+      }
+    }
+  });
+  firebaseDB.ref('settings').on('value', snapshot=>{
+    const data = snapshot.val();
+    if(data){
+      save('af_settings',data);
+      if(typeof renderSettings==='function') renderSettings();
+    }
+  });
+}
+
+function startPresenter(){
+  const room = document.getElementById('room-code-input').value.trim().toUpperCase();
+  if(!room){ alert('Ingresa el código de sala para iniciar el proyector.'); return; }
+  if(!QUESTIONS.length){ alert('El admin no ha cargado acciones aún. Toca ⚙️'); return; }
+  const settings=getGameSettings();
+  presenterDeck = shuffle(QUESTIONS).slice(0, Math.min(settings.questionCount, QUESTIONS.length));
+  presenterIndex = 0;
+  presenterRoom = room;
+  presenterMode = true;
+  renderPresenter();
+  showScreen('s-presenter');
+}
+
+function renderPresenter(){
+  const q = presenterDeck[presenterIndex];
+  document.getElementById('presenter-room').textContent = presenterRoom;
+  document.getElementById('presenter-q-count').textContent = `Pregunta ${presenterIndex+1} de ${presenterDeck.length}`;
+  document.getElementById('presenter-q').textContent = q.label;
+  document.getElementById('presenter-options').innerHTML = q.options.map(opt=>`<div class="opt-btn" style="cursor:default;background:#0f2c36;border:2px solid #ffffff15;color:#fff;">${opt}</div>`).join('');
+  document.getElementById('presenter-answer').textContent = 'Respuesta correcta: ';
+  document.getElementById('presenter-answer').style.opacity = '0';
+}
+
+function presenterNext(){
+  if(presenterIndex+1 >= presenterDeck.length){
+    alert('Has llegado al final de la ronda.'); return;
+  }
+  presenterIndex++;
+  renderPresenter();
+}
+
+function presenterReveal(){
+  const q = presenterDeck[presenterIndex];
+  document.getElementById('presenter-answer').textContent = 'Respuesta correcta: ' + q.answer;
+  document.getElementById('presenter-answer').style.opacity = '1';
+}
+
+window.addEventListener('load', ()=>{
+  populateRoomFromUrl();
+  initFirebaseSync();
+  if(getQueryParam('mode')==='host') startPresenter();
+});
+
 // ============================================================
 //  DEFAULT QUESTIONS
 // ============================================================
@@ -564,6 +720,7 @@ let QUESTIONS = getQuestions() || [
 // ============================================================
 let selectedAnim='stow', pinUnlocked=false, currentLbRoom=null, editingAction=null;
 let adminDeck=[], adminIndex=0, arbiterActive=false;
+let presenterDeck=[], presenterIndex=0, presenterRoom='', presenterMode=false;
 
 function toggleAdmin(){
   const p=document.getElementById('admin');
@@ -668,11 +825,16 @@ function renderRoomList(){
   rooms.forEach((r,i)=>{
     const d=document.createElement('div');
     d.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#0a1a20;border-radius:10px;padding:9px 12px;margin-bottom:6px;';
-    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><div style="display:flex;gap:6px;align-items:center;"><button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-share="${i}">🔗</button><button class="del" data-idx="${i}">🗑️</button></div>`;
+    d.innerHTML=`<span style="font-family:Fredoka One,cursive;color:var(--accent);letter-spacing:2px;">${r}</span><div style="display:flex;gap:6px;align-items:center;"><button class="btn btn-ghost btn-sm" style="padding:6px 10px;" data-share="${i}">🔗</button><button class="btn btn-primary btn-sm" style="padding:6px 10px;" data-present="${i}">📽</button><button class="del" data-idx="${i}">🗑️</button></div>`;
     d.querySelector('[data-share]').addEventListener('click',function(){
       const idx=parseInt(this.getAttribute('data-share'));
       const rooms=getRooms();
       showRoomShare(rooms[idx]);
+    });
+    d.querySelector('[data-present]').addEventListener('click',function(){
+      const idx=parseInt(this.getAttribute('data-present'));
+      const rooms=getRooms();
+      openPresenter(rooms[idx]);
     });
     d.querySelector('.del').addEventListener('click',function(){
       const idx=parseInt(this.getAttribute('data-idx'));
@@ -750,14 +912,14 @@ function adminShowAnswer(){
   document.getElementById('arb-msg').style.display='block';
 }
 
-function addRoom(){
+async function addRoom(){
   const inp=document.getElementById('new-room');
   const code=inp.value.trim().toUpperCase();
   const msg=document.getElementById('room-msg');
   if(!code){ msg.innerHTML='<div class="msg err">⚠️ Escribe un código</div>'; setTimeout(()=>{msg.innerHTML='';},2000); return; }
   const rooms=getRooms();
   if(rooms.includes(code)){ msg.innerHTML='<div class="msg err">⚠️ Esa sala ya existe</div>'; setTimeout(()=>{msg.innerHTML='';},2000); return; }
-  rooms.push(code); saveRooms(rooms);
+  rooms.push(code); await saveRooms(rooms);
   inp.value='';
   renderRoomList();
   showRoomShare(code);
@@ -845,13 +1007,17 @@ let pName='', pRoom='', score=0, qIdx=0, timerInt=null, tLeft=15, currentGameLim
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const showScreen=id=>{ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
 
-function startGame(){
+async function startGame(){
   const n=document.getElementById('player-name').value.trim();
   const r=document.getElementById('room-code-input').value.trim().toUpperCase();
   if(!n){ document.getElementById('player-name').focus(); return; }
   if(!r){ document.getElementById('room-code-input').focus(); return; }
   const rooms=getRooms();
-  if(!rooms.includes(r)){
+  const roomExistsLocally=rooms.includes(r);
+  if(!roomExistsLocally && fbAvailable){
+    const exists = await roomExists(r);
+    if(!exists){ alert(`La sala "${r}" no existe.\nPide el código correcto a tu manager.`); return; }
+  } else if(!roomExistsLocally){
     alert(`La sala "${r}" no existe.\nPide el código correcto a tu manager.`); return;
   }
   if(!QUESTIONS.length){ alert('El admin no ha cargado acciones aún. Toca ⚙️'); return; }
