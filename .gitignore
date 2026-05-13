@@ -11,3 +11,4 @@ Thumbs.db
 
 # Firebase local emulator files
 .firebaserc.local
+.firebase/
