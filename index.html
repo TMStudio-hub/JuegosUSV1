@@ -201,7 +201,7 @@
     <button class="tab active" onclick="switchTab('tab-actions',this)">🎭 Acciones</button>
     <button class="tab" onclick="switchTab('tab-lb',this)">🏆 Resultados</button>
     <button class="tab" onclick="switchTab('tab-cfg',this)">⚙️ Config</button>
-    <button class="tab" onclick="switchTab('tab-arb',this)">🏁 Árbitro</button>
+    <button class="tab" onclick="switchTab('tab-arb',this)">🏁 Control</button>
   </div>
 
   <!-- TAB ACCIONES -->
@@ -315,17 +315,17 @@
   <div class="tab-content" id="tab-arb">
     <div class="card">
       <div class="section-lbl">🎤 Sala y acceso</div>
-      <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Desde aquí el árbitro abre el lobby, comparte el acceso y lanza la pantalla del presentador.</p>
+      <p style="font-size:.8rem;color:#aaa;margin-bottom:12px;">Desde aquí control de sala abre el acceso, comparte el QR y mueve la partida para todos al mismo tiempo.</p>
       <div class="input-wrap">
         <label>Sala seleccionada</label>
         <select id="arb-room-select" style="width:100%;" onchange="handleArbiterRoomChange()"></select>
       </div>
       <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:120px;" onclick="activateSession()">Abrir lobby</button>
-        <button class="btn btn-primary btn-sm" style="flex:1;min-width:120px;" onclick="beginSession()">Iniciar partida</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:120px;" onclick="openPresenterFromSelect()">Abrir presentador</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:120px;" onclick="activateSession()">Abrir acceso</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;min-width:120px;" onclick="beginSession()">Lanzar partida</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:120px;" onclick="openPresenterFromSelect()">Abrir pantalla</button>
       </div>
-      <p class="hint" style="margin-top:10px;">El presentador proyecta QR, lobby, preguntas y puntos en vivo. El control sigue estando aquí.</p>
+      <p class="hint" style="margin-top:10px;">La pantalla muestra QR, sala en vivo, pregunta actual y puntos. El avance de preguntas se controla desde aquí.</p>
       <div class="room-code-display" id="arb-room-code-display">----</div>
       <div class="qr-shell">
         <div id="arb-room-qr"></div>
@@ -334,12 +334,12 @@
       <div class="msg" id="arb-session-msg" style="margin-top:12px;display:none;"></div>
     </div>
     <div class="card">
-      <div class="section-lbl">👥 Lobby y puntajes en vivo</div>
+      <div class="section-lbl">👥 Sala en vivo</div>
       <div class="arb-live-summary" id="arb-live-summary"></div>
-      <div id="arb-live-players" class="lb-empty">Selecciona una sala y abre el lobby para ver jugadores y puntos.</div>
+      <div id="arb-live-players" class="lb-empty">Selecciona una sala y abre el acceso para ver jugadores y puntos.</div>
     </div>
     <div class="card" style="text-align:center;">
-      <div class="section-lbl">📽 Control de ronda</div>
+      <div class="section-lbl">🎮 Control de preguntas</div>
       <div class="score-badge" style="margin-bottom:12px;">Pregunta <span id="arb-number">0</span> / <span id="arb-total">0</span></div>
       <div class="stage" style="margin:0 auto;max-width:320px;">
         <svg id="arb-svg" width="100%" viewBox="0 0 220 200" style="max-height:165px;"></svg>
@@ -349,9 +349,9 @@
         <span class="tag" id="arb-answer" style="background:#ffffff10;color:#aaa;">Respuesta correcta</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;">
-        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:140px;" onclick="startArbiter()">Iniciar ronda</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;min-width:140px;" onclick="startArbiter()">Preparar ronda</button>
         <button class="btn btn-ghost btn-sm" style="flex:1;min-width:140px;" onclick="adminShowAnswer()">Mostrar respuesta</button>
-        <button class="btn btn-primary btn-sm" style="flex:1;min-width:140px;" onclick="adminNextQuestion()">Siguiente pregunta</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;min-width:140px;" onclick="adminNextQuestion()">Pasar a la siguiente</button>
       </div>
       <div class="msg" id="arb-msg" style="margin-top:12px;display:none;"></div>
     </div>
@@ -365,7 +365,7 @@
     <div class="card presenter-card presenter-section">
       <div class="section-lbl">Sala: <span id="presenter-room" style="color:var(--accent);"></span></div>
       <div class="room-code-display" id="presenter-room-code">----</div>
-      <p class="hint" id="presenter-status-text" style="margin-top:0;">El árbitro todavía no abrió el lobby.</p>
+      <p class="hint" id="presenter-status-text" style="margin-top:0;">Control de sala todavía no abrió el acceso.</p>
       <div id="presenter-qr-wrap" class="qr-shell">
         <div id="presenter-qr"></div>
         <p class="hint" style="margin:0;">Escanea este QR para entrar directo a la sala.</p>
@@ -399,7 +399,7 @@
       <label>Código de sala</label>
       <input type="text" id="room-code-input" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;font-family:'Fredoka One',cursive;font-size:1.1rem;letter-spacing:2px;">
     </div>
-    <p class="hint">Tu manager te dará el código de sala</p>
+    <p class="hint">Tu líder de sala te compartirá el código.</p>
   </div>
   <button class="btn btn-primary" onclick="startGame()">¡Jugar! 🎮</button>
   <p class="hint" style="margin-top:12px;">Admin: toca ⚙️ para configurar</p>
@@ -413,7 +413,7 @@
     <div class="section-lbl">Sala <span id="lobby-room" style="color:var(--accent);"></span></div>
     <p style="margin-bottom:12px;">Jugador: <strong id="lobby-name"></strong></p>
     <div id="lobby-players" class="lb-empty">Esperando jugadores...</div>
-    <p class="hint" style="margin-top:12px;">El juego comenzará cuando el árbitro presione iniciar.</p>
+    <p class="hint" style="margin-top:12px;">La partida arrancará cuando control de sala lance la primera pregunta.</p>
     <button class="btn btn-ghost" style="margin-top:14px;" onclick="restart()">Salir de la sala</button>
   </div>
 </div>
@@ -442,22 +442,23 @@
   </div>
   <div class="q-label" id="q-lbl"></div>
   <div class="options-grid" id="opts"></div>
+  <p class="hint" id="game-status-note" style="margin-top:10px;min-height:20px;"></p>
 </div>
 
 <!-- ===== RESULT ===== -->
 <div class="screen" id="s-result">
   <img class="brand-logo brand-logo-sm" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
-  <div class="logo-sub">Día del Trabajador 🎉</div>
+  <div class="logo-sub">Has terminado tu ruta</div>
   <div class="trophy" id="r-trophy">🏆</div>
   <div class="final-name" id="r-name"></div>
-  <p style="color:#aaa;font-size:.85rem;text-align:center;">Puntaje final</p>
+  <p style="color:#aaa;font-size:.85rem;text-align:center;">Puntaje de la ruta</p>
   <div class="final-score" id="r-score"></div>
   <div class="result-rank-badge" id="r-rank"></div>
   <p id="r-position" style="color:#aaa;font-size:.85rem;text-align:center;margin-top:8px;"></p>
   <p id="r-room-label" style="color:var(--fresh);font-weight:900;font-size:.85rem;text-align:center;margin-top:4px;"></p>
   <div class="card" style="margin-top:16px;text-align:center;">
-    <p style="font-weight:900;color:var(--fresh);font-size:1.05rem;">🎉 Feliz Día del Trabajador 🎉</p>
-    <p style="color:#aaa;font-size:.8rem;margin-top:4px;">¡Comparte tu score con tus compañeros!</p>
+    <p style="font-weight:900;color:var(--fresh);font-size:1.05rem;">🛣️ Has cerrado tu ruta</p>
+    <p style="color:#aaa;font-size:.8rem;margin-top:4px;">Compara tu puntaje con la sala y vuelve a intentarlo si quieres mejorar.</p>
   </div>
   <button class="btn btn-secondary" style="margin-top:14px;" onclick="restart()">Jugar de nuevo 🔄</button>
 </div>
@@ -644,7 +645,7 @@ function showRoomShare(room){
 }
 
 function openPresenter(room){
-  if(!room){ alert('Selecciona o crea primero una sala para el modo presentador.'); return; }
+  if(!room){ alert('Selecciona o crea primero una sala para abrir la pantalla de sala.'); return; }
   const url=new URL(window.location.href);
   url.search='';
   url.hash='';
@@ -678,7 +679,7 @@ function deserializeDeck(data){
 function getPlayerStatusLabel(status){
   if(status==='playing') return 'Jugando';
   if(status==='finished') return 'Finalizó';
-  return 'Lobby';
+  return 'En espera';
 }
 
 function sortLivePlayers(data){
@@ -699,7 +700,7 @@ function buildLiveSummaryMarkup(players,session){
   const playing=players.filter(player=>player.status==='playing').length;
   const finished=players.filter(player=>player.status==='finished').length;
   const topScore=players.length ? players[0].score : 0;
-  const stateLabel = !session?.openedAt ? 'Sin lobby' : session.state==='results' ? 'Resultados' : session.started ? 'En juego' : 'Lobby abierto';
+  const stateLabel = !session?.openedAt ? 'Sin acceso' : session.state==='results' ? 'Resultados' : session.started ? 'En juego' : 'Acceso abierto';
   return [
     `<div class="live-pill">Estado <strong>${stateLabel}</strong></div>`,
     `<div class="live-pill">Jugadores <strong>${players.length}</strong></div>`,
@@ -793,7 +794,7 @@ function handleArbiterRoomChange(force=false){
 
 function startPresenter(){
   const room = getQueryParam('room') || getSelectedRoom() || document.getElementById('room-code-input').value.trim().toUpperCase();
-  if(!room){ alert('Ingresa o selecciona una sala para iniciar el presentador.'); return; }
+  if(!room){ alert('Ingresa o selecciona una sala para abrir la pantalla de sala.'); return; }
   presenterRoom = room;
   const adminButton = document.querySelector('.admin-btn');
   if(adminButton) adminButton.style.display = 'none';
@@ -824,28 +825,28 @@ function renderPresenterSession(room,session){
   renderQrCode('presenter-qr', room ? buildShareLink(room) : '', 230);
   answer.classList.remove('show');
   if(!session?.openedAt){
-    document.getElementById('presenter-subtitle').textContent='Esperando lobby';
-    document.getElementById('presenter-status-text').textContent='El árbitro todavía no abrió el lobby de esta sala.';
+    document.getElementById('presenter-subtitle').textContent='Esperando acceso';
+    document.getElementById('presenter-status-text').textContent='Control de sala todavía no abrió el acceso de esta sala.';
     qrWrap.classList.remove('presenter-hidden');
     questionWrap.classList.add('presenter-hidden');
     return;
   }
   if(session.state==='results'){
     document.getElementById('presenter-subtitle').textContent='Resultados en vivo';
-    document.getElementById('presenter-status-text').textContent='La ronda terminó. Usa esta pantalla para mostrar la tabla de puntos.';
+    document.getElementById('presenter-status-text').textContent='La partida terminó. Usa esta pantalla para mostrar los resultados.';
     qrWrap.classList.add('presenter-hidden');
     questionWrap.classList.add('presenter-hidden');
     return;
   }
   if(!session.started || !questionDeck.length){
-    document.getElementById('presenter-subtitle').textContent='Lobby en pantalla';
-    document.getElementById('presenter-status-text').textContent='Escanea el QR o usa el código de sala para entrar al lobby.';
+    document.getElementById('presenter-subtitle').textContent='Acceso en pantalla';
+    document.getElementById('presenter-status-text').textContent='Escanea el QR o usa el código para entrar a la sala.';
     qrWrap.classList.remove('presenter-hidden');
     questionWrap.classList.add('presenter-hidden');
     return;
   }
   document.getElementById('presenter-subtitle').textContent='Partida en curso';
-  document.getElementById('presenter-status-text').textContent='El árbitro controla la pregunta actual desde su panel.';
+  document.getElementById('presenter-status-text').textContent='Control de sala decide cuándo mostrar respuesta y pasar a la siguiente pregunta.';
   qrWrap.classList.add('presenter-hidden');
   questionWrap.classList.remove('presenter-hidden');
   document.getElementById('presenter-q-count').textContent = `Pregunta ${questionIndex+1} de ${questionDeck.length}`;
@@ -934,19 +935,33 @@ function renderLobbyPlayers(data){
     : '<div class="lb-empty">Esperando jugadores...</div>';
 }
 
+function setGameStatus(message=''){
+  const el=document.getElementById('game-status-note');
+  if(!el) return;
+  el.textContent=message;
+}
+
 async function startGameSession(room,name){
   const settings=getGameSettings();
   currentGameLimit=settings.timeLimit;
   pName=name;
   pRoom=room;
   score=0;
-  qIdx=0;
+  qIdx=-1;
   deck=await getSessionDeck(room);
   if(!deck.length) deck=shuffle(QUESTIONS).slice(0, Math.min(settings.questionCount, QUESTIONS.length));
   currentPlayerFinished=false;
   await updateCurrentPlayerState({status:'playing',score:0,progress:0,totalQuestions:deck.length});
   document.getElementById('game-room-badge').textContent='🚪 '+room;
   showScreen('s-game');
+  setGameStatus('Esperando la primera pregunta de control de sala...');
+  if(fbAvailable){
+    currentPlayerSessionRoomRef = firebaseDB.ref(`sessions/${encodeURIComponent(room)}`);
+    currentPlayerSessionHandler = snap=>{ syncPlayerSession(snap.val()); };
+    currentPlayerSessionRoomRef.on('value', currentPlayerSessionHandler);
+    return;
+  }
+  qIdx=0;
   loadQ();
 }
 
@@ -975,12 +990,15 @@ function openPresenterFromSelect(){
 function cleanupPlayerSession(removePlayer=false){
   if(currentPlayerStartedRef && currentPlayerStartedHandler) currentPlayerStartedRef.off('value', currentPlayerStartedHandler);
   if(currentPlayerPlayersRef && currentPlayerPlayersHandler) currentPlayerPlayersRef.off('value', currentPlayerPlayersHandler);
+  if(currentPlayerSessionRoomRef && currentPlayerSessionHandler) currentPlayerSessionRoomRef.off('value', currentPlayerSessionHandler);
   if(removePlayer && currentPlayerSessionRef){
     currentPlayerSessionRef.remove().catch(e=>console.warn('Firebase cleanup player error',e));
   }
   currentPlayerSessionRef=null;
+  currentPlayerSessionRoomRef=null;
   currentPlayerStartedRef=null;
   currentPlayerPlayersRef=null;
+  currentPlayerSessionHandler=null;
   currentPlayerStartedHandler=null;
   currentPlayerPlayersHandler=null;
   currentPlayerFinished=false;
@@ -1021,9 +1039,40 @@ async function publishArbiterControl(room){
   }
 }
 
+async function syncPlayerSession(session){
+  if(!session) return;
+  const remoteDeck = deserializeDeck(session?.control?.deck);
+  if(remoteDeck.length) deck = remoteDeck;
+  if(session.state==='results'){
+    setGameStatus('Ruta cerrada. Preparando tu resultado...');
+    if(!currentPlayerFinished && document.getElementById('s-game').classList.contains('active')){
+      await endGame();
+    }
+    return;
+  }
+  if(!session.started || !deck.length){
+    setGameStatus('Esperando la primera pregunta de control de sala...');
+    return;
+  }
+  const remoteIndex = Math.max(0, Math.min(Number(session?.control?.index) || 0, deck.length-1));
+  if(qIdx !== -1 && qIdx !== remoteIndex && !answered){
+    clearInterval(timerInt);
+    answered = true;
+    await updateCurrentPlayerState({status:'playing',score,progress:Math.min(qIdx+1,deck.length),totalQuestions:deck.length});
+  }
+  if(qIdx !== remoteIndex){
+    qIdx = remoteIndex;
+    loadQ();
+    return;
+  }
+  if(session?.control?.answerVisible){
+    setGameStatus('Respuesta revisada. Espera a que control de sala pase la siguiente pregunta.');
+  }
+}
+
 async function activateSession(){
   const room = getSelectedRoom();
-  if(!room){ alert('Selecciona una sala en el panel del árbitro.'); return; }
+  if(!room){ alert('Selecciona una sala en Control.'); return; }
   if(!fbAvailable){ alert('Firebase no disponible.'); return; }
   const rooms = getRooms();
   if(!rooms.includes(room)){
@@ -1039,11 +1088,11 @@ async function activateSession(){
     arbiterAnswerVisible=false;
     renderArbiterPanel();
     handleArbiterRoomChange(true);
-    msg.textContent = `Lobby abierto para ${room}. Los jugadores pueden entrar con el código o enlace.`;
+    msg.textContent = `Acceso abierto para ${room}. El equipo ya puede entrar con el código o el QR.`;
     msg.className='msg ok';
   } catch(e){
     console.warn('Firebase activateSession error',e);
-    msg.textContent = `No se pudo abrir el lobby de ${room}. Revisa la conexion o las reglas de Firebase.`;
+    msg.textContent = `No se pudo abrir el acceso de ${room}. Revisa la conexion o las reglas de Firebase.`;
     msg.className='msg err';
   }
   msg.style.display='block';
@@ -1051,7 +1100,7 @@ async function activateSession(){
 
 async function beginSession(){
   const room = getSelectedRoom();
-  if(!room){ alert('Selecciona una sala en el panel del árbitro.'); return; }
+  if(!room){ alert('Selecciona una sala en Control.'); return; }
   if(!fbAvailable){ alert('Firebase no disponible.'); return; }
   const msg=document.getElementById('arb-session-msg');
   try{
@@ -1060,7 +1109,7 @@ async function beginSession(){
       if(!ready) return;
     }
     await firebaseDB.ref(`sessions/${encodeURIComponent(room)}`).update({started:true,state:'live',updatedAt:Date.now()});
-    msg.textContent = `Partida iniciada en ${room}. ¡A jugar!`;
+    msg.textContent = `Partida lanzada en ${room}. Todo el equipo ya quedó sincronizado.`;
     msg.className='msg ok';
   } catch(e){
     console.warn('Firebase beginSession error',e);
@@ -1141,8 +1190,8 @@ let presenterRoom='';
 let arbiterAnswerVisible=false, arbiterSessionRoom='';
 let arbiterSessionRef=null, arbiterSessionHandler=null;
 let presenterSessionRoom='', presenterSessionRef=null, presenterSessionHandler=null;
-let currentPlayerSessionRef=null, currentPlayerStartedRef=null, currentPlayerPlayersRef=null;
-let currentPlayerStartedHandler=null, currentPlayerPlayersHandler=null, currentPlayerFinished=false;
+let currentPlayerSessionRef=null, currentPlayerSessionRoomRef=null, currentPlayerStartedRef=null, currentPlayerPlayersRef=null;
+let currentPlayerSessionHandler=null, currentPlayerStartedHandler=null, currentPlayerPlayersHandler=null, currentPlayerFinished=false;
 
 function toggleAdmin(){
   const p=document.getElementById('admin');
@@ -1289,7 +1338,7 @@ function saveSettings(){
 
 async function startArbiter(){
   const room = getSelectedRoom();
-  if(!room){ alert('Selecciona una sala en el panel del árbitro.'); return false; }
+  if(!room){ alert('Selecciona una sala en Control.'); return false; }
   if(!QUESTIONS.length){ alert('Agrega acciones primero en el panel de Acciones.'); return false; }
   const settings=getGameSettings();
   arbiterActive=true;
@@ -1307,7 +1356,7 @@ function renderArbiterPanel(){
   const question=adminDeck[adminIndex]||null;
   document.getElementById('arb-total').textContent=count;
   document.getElementById('arb-number').textContent=count?adminIndex+1:0;
-  document.getElementById('arb-label').textContent=question?question.label:'Presiona Iniciar ronda para ver la primera pregunta.';
+  document.getElementById('arb-label').textContent=question?question.label:'Pulsa "Preparar ronda" para cargar la primera pregunta.';
   document.getElementById('arb-svg').innerHTML=question?`<g>${ANIMS[question.anim]?ANIMS[question.anim].build():ANIMS.stow.build()}</g>`:'';
   document.getElementById('arb-answer').textContent=question?`Respuesta: ${question.answer}`:'Respuesta correcta';
   document.getElementById('arb-answer').style.background=question?(arbiterAnswerVisible?'#06d6a088':'#ffffff12'):'#ffffff10';
@@ -1317,7 +1366,7 @@ async function adminNextQuestion(){
   const room = getSelectedRoom();
   if(!arbiterActive){ await startArbiter(); return; }
   if(adminIndex+1>=adminDeck.length){
-    document.getElementById('arb-msg').textContent='✅ Ronda finalizada. Reinicia para jugar otra vez.';
+    document.getElementById('arb-msg').textContent='✅ Ruta cerrada. Ya puedes revisar resultados o volver al inicio.';
     document.getElementById('arb-msg').className='msg ok';
     document.getElementById('arb-msg').style.display='block';
     if(fbAvailable && room){
@@ -1336,7 +1385,7 @@ async function adminNextQuestion(){
 async function adminShowAnswer(){
   const room = getSelectedRoom();
   if(!arbiterActive||!adminDeck.length){
-    document.getElementById('arb-msg').textContent='⚠️ Inicia primero la ronda para mostrar respuestas.';
+    document.getElementById('arb-msg').textContent='⚠️ Prepara primero la ronda para mostrar respuestas.';
     document.getElementById('arb-msg').className='msg err';
     document.getElementById('arb-msg').style.display='block';
     return;
@@ -1344,7 +1393,7 @@ async function adminShowAnswer(){
   arbiterAnswerVisible=true;
   await publishArbiterControl(room);
   renderArbiterPanel();
-  document.getElementById('arb-msg').textContent='✅ Respuesta visible para el árbitro.';
+  document.getElementById('arb-msg').textContent='✅ Respuesta visible en la pantalla.';
   document.getElementById('arb-msg').className='msg ok';
   document.getElementById('arb-msg').style.display='block';
 }
@@ -1441,7 +1490,7 @@ async function clearRoomScores(){
 // ============================================================
 //  GAME
 // ============================================================
-let pName='', pRoom='', score=0, qIdx=0, timerInt=null, tLeft=15, currentGameLimit=15, answered=false, deck=[];
+let pName='', pRoom='', score=0, qIdx=-1, timerInt=null, tLeft=15, currentGameLimit=15, answered=false, deck=[];
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const showScreen=id=>{ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
 
@@ -1455,7 +1504,7 @@ async function startGame(){
   if(!roomExistsLocally && fbAvailable){
     try{
       const exists = await roomExists(r);
-      if(!exists){ alert(`La sala "${r}" no existe.\nPide el código correcto a tu manager.`); return; }
+      if(!exists){ alert(`La sala "${r}" no existe.\nPide el código correcto a tu líder de sala.`); return; }
     } catch(e){
       alert('No se pudo validar la sala en este momento. Revisa la conexion o la configuracion de Firebase.');
       return;
@@ -1467,6 +1516,7 @@ async function startGame(){
 function loadQ(){
   if(qIdx>=deck.length){ endGame(); return; }
   answered=false;
+  setGameStatus('');
   const q=deck[qIdx];
   updateCurrentPlayerState({status:'playing',progress:qIdx,totalQuestions:deck.length});
   document.getElementById('prog').style.width=`${qIdx/deck.length*100}%`;
@@ -1508,19 +1558,20 @@ function pick(chosen,correct){
     if(b.textContent===correct) b.classList.add('correct');
     else if(b.textContent===chosen&&chosen!==correct) b.classList.add('wrong');
   });
+  setGameStatus(qIdx+1>=deck.length ? 'Respuesta enviada. Espera a que control de sala cierre la ruta.' : 'Respuesta enviada. Espera a que control de sala pase la siguiente pregunta.');
   doFlash(chosen===correct, chosen===correct?`+${pts} pts ✅`:'❌ ¡Fallaste!');
-  setTimeout(()=>{ qIdx++; loadQ(); },1200);
 }
 
 function timeout(){
   answered=true;
+  clearInterval(timerInt);
   updateCurrentPlayerState({status:'playing',score,progress:qIdx+1,totalQuestions:deck.length});
   document.querySelectorAll('.opt-btn').forEach(b=>{
     b.disabled=true;
     if(b.textContent===deck[qIdx].answer) b.classList.add('correct');
   });
+  setGameStatus(qIdx+1>=deck.length ? 'Tiempo agotado. Espera el cierre de la ruta.' : 'Tiempo agotado. Espera a que control de sala pase la siguiente pregunta.');
   doFlash(false,'⏰ ¡Tiempo!');
-  setTimeout(()=>{ qIdx++; loadQ(); },1200);
 }
 
 function doFlash(ok,txt){
@@ -1536,22 +1587,23 @@ async function endGame(){
   currentPlayerFinished=true;
   updateCurrentPlayerState({status:'finished',score,progress:deck.length,totalQuestions:deck.length,rank:pos,finishedAt:Date.now()});
   const total=deck.length*currentGameLimit*10, pct=score/total;
-  let t='🥉',r='Buen intento, ¡sigue practicando!';
-  if(pct>=.9){t='🏆';r='¡Eres el campeón del site! 🔥';}
-  else if(pct>=.7){t='🥇';r='¡Excelente asociado! ⭐';}
-  else if(pct>=.5){t='🥈';r='¡Muy bien! ¡Casi lo logras!';}
+  let t='🧭',r='Ruta completada. La siguiente te saldrá mejor.';
+  if(pct>=.9){t='🏆';r='Ruta impecable. Cerraste con ritmo de campeón.';}
+  else if(pct>=.7){t='🥇';r='Muy buena ruta. Terminaste fuerte.';}
+  else if(pct>=.5){t='🥈';r='Ruta sólida. Vas por muy buen camino.';}
   document.getElementById('r-trophy').textContent=t;
   document.getElementById('r-name').textContent=pName;
   document.getElementById('r-score').textContent=score+' pts';
   document.getElementById('r-rank').textContent=r;
   const all=await getRoomScores(pRoom);
-  document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en tu equipo`:'¡Primero en jugar en tu sala!';
+  document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en esta sala`:'Primero en cerrar ruta en esta sala.';
   document.getElementById('r-room-label').textContent='🚪 Sala: '+pRoom;
   showScreen('s-result');
 }
 
 function restart(){
   clearInterval(timerInt);
+  setGameStatus('');
   const shouldRemovePlayer = !currentPlayerFinished;
   cleanupPlayerSession(shouldRemovePlayer);
   const adminButton = document.querySelector('.admin-btn');
