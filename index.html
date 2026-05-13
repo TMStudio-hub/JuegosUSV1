@@ -659,6 +659,17 @@ function initFirebaseSync(){
   });
 }
 
+async function roomExists(room){
+  if(!fbAvailable) return false;
+  try{
+    const snapshot = await firebaseDB.ref('rooms').once('value');
+    const data = snapshot.val();
+    if(!data) return false;
+    const list = Array.isArray(data)?data:Object.values(data);
+    return list.map(String).includes(room);
+  } catch(e){ console.warn('Firebase roomExists error',e); return false; }
+}
+
 // ============================================================
 //  DEFAULT QUESTIONS
 // ============================================================
