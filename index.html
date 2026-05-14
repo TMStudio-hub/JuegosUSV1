@@ -432,6 +432,27 @@
   <p class="hint" id="game-status-note" style="margin-top:10px;min-height:20px;"></p>
 </div>
 
+<div class="screen" id="s-arcade">
+  <img class="brand-logo brand-logo-sm" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
+  <div class="logo-title">RANKING ARCADE</div>
+  <div class="logo-sub">Ingresa tus iniciales para entrar al top</div>
+  <div class="card">
+    <div class="section-lbl">Puntaje final</div>
+    <div class="final-score" id="arcade-score" style="font-size:2.5rem;margin-bottom:12px;">0 pts</div>
+    <div class="input-wrap">
+      <label>Iniciales (3 letras)</label>
+      <input type="text" id="arcade-initials" maxlength="3" placeholder="AAA" style="text-transform:uppercase;letter-spacing:0.35em;">
+    </div>
+    <div id="arcade-msg"></div>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="submitArcadeScore()">Guardar en el ranking</button>
+  </div>
+  <div class="card">
+    <div class="section-lbl">Top jugadores</div>
+    <div id="arcade-leaderboard"></div>
+  </div>
+  <button class="btn btn-primary" style="margin-top:14px;" onclick="showScreen('s-splash')">Volver al menú</button>
+</div>
+
 <!-- ===== RESULT ===== -->
 <div class="screen" id="s-result">
   <img class="brand-logo brand-logo-sm" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
@@ -527,6 +548,46 @@ async function saveRoomScores(room,s){
     } catch(e){ console.warn('Firebase saveRoomScores error',e); }
   }
   save('af_scores_'+room,s);
+}
+
+function getArcadeRanking(){
+  return load('flag_arcade_ranking',[]);
+}
+function saveArcadeRanking(list){
+  save('flag_arcade_ranking',list);
+}
+function renderArcadeLeaderboard(){
+  const board = getArcadeRanking();
+  const el = document.getElementById('arcade-leaderboard');
+  if(!el) return;
+  if(!board.length){ el.innerHTML = '<div class="lb-empty">Aún no hay puntajes en el ranking.</div>'; return; }
+  el.innerHTML = board.map((item,i)=>`
+    <div class="lb-row" style="animation-delay:${i*20}ms">
+      <div class="lb-rank ${i<3?'lb-rank-'+(i+1):'lb-rank-n'}">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${item.initials}</div>
+        <div class="lb-meta">${item.time}</div>
+      </div>
+      <div class="lb-score">${item.score} pts</div>
+    </div>`).join('');
+}
+function submitArcadeScore(){
+  const initialsEl = document.getElementById('arcade-initials');
+  const msg = document.getElementById('arcade-msg');
+  if(!initialsEl || !msg) return;
+  const initials = initialsEl.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
+  if(initials.length<3){
+    msg.innerHTML = '<div class="msg err">Escribe 3 letras para tus iniciales.</div>';
+    return;
+  }
+  const ranking = getArcadeRanking();
+  ranking.push({initials,score, time:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})});
+  ranking.sort((a,b)=>b.score-a.score);
+  if(ranking.length>10) ranking.length=10;
+  saveArcadeRanking(ranking);
+  msg.innerHTML = '<div class="msg ok">✅ ¡Listo! Tu puntaje quedó en el ranking.</div>';
+  initialsEl.disabled = true;
+  renderArcadeLeaderboard();
 }
 
 async function addScore(name,score,room){
@@ -1570,7 +1631,7 @@ function startFlagGame(name){
   pName = name;
   pRoom = 'Demo Banderas';
   score = 0;
-  qIdx = -1;
+  qIdx = 0;
   deck = shuffle(FLAG_QUESTIONS).slice(0, Math.min(6, FLAG_QUESTIONS.length));
   currentGameLimit = 12;
   currentPlayerFinished = false;
@@ -1672,8 +1733,14 @@ async function endGame(){
   document.getElementById('r-score').textContent=score+' pts';
   document.getElementById('r-rank').textContent=r;
   if(selectedGame==='flags'){
-    document.getElementById('r-position').textContent='¡Has jugado el demo de banderas!';
-    document.getElementById('r-room-label').textContent='🌍 Demo Mundial de Banderas';
+    document.getElementById('arcade-score').textContent = score + ' pts';
+    const initials = pName.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3) || 'AAA';
+    const initialsEl = document.getElementById('arcade-initials');
+    if(initialsEl){ initialsEl.value = initials; initialsEl.disabled = false; }
+    document.getElementById('arcade-msg').innerHTML = '';
+    renderArcadeLeaderboard();
+    showScreen('s-arcade');
+    return;
   } else {
     const all=await getRoomScores(pRoom);
     document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en esta sala`:'Primero en cerrar ruta en esta sala.';
