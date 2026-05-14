@@ -1695,6 +1695,15 @@ function pick(chosen,correct){
     if(b.textContent===correct) b.classList.add('correct');
     else if(b.textContent===chosen&&chosen!==correct) b.classList.add('wrong');
   });
+  if(selectedGame==='flags'){
+    setGameStatus(qIdx+1>=deck.length ? 'Respuesta enviada. Preparando resultado...' : 'Respuesta enviada. Cargando la siguiente bandera...');
+    doFlash(chosen===correct, chosen===correct?`+${pts} pts ✅`:'❌ ¡Fallaste!');
+    setTimeout(()=>{
+      qIdx++;
+      if(qIdx<deck.length) loadQ(); else endGame();
+    }, 1200);
+    return;
+  }
   setGameStatus(qIdx+1>=deck.length ? 'Respuesta enviada. Espera a que control de sala cierre la ruta.' : 'Respuesta enviada. Espera a que control de sala pase la siguiente pregunta.');
   doFlash(chosen===correct, chosen===correct?`+${pts} pts ✅`:'❌ ¡Fallaste!');
 }
@@ -1707,6 +1716,15 @@ function timeout(){
     b.disabled=true;
     if(b.textContent===deck[qIdx].answer) b.classList.add('correct');
   });
+  if(selectedGame==='flags'){
+    setGameStatus(qIdx+1>=deck.length ? 'Tiempo agotado. Preparando resultado...' : 'Tiempo agotado. Cargando la siguiente bandera...');
+    doFlash(false,'⏰ ¡Tiempo!');
+    setTimeout(()=>{
+      qIdx++;
+      if(qIdx<deck.length) loadQ(); else endGame();
+    }, 1200);
+    return;
+  }
   setGameStatus(qIdx+1>=deck.length ? 'Tiempo agotado. Espera el cierre de la ruta.' : 'Tiempo agotado. Espera a que control de sala pase la siguiente pregunta.');
   doFlash(false,'⏰ ¡Tiempo!');
 }
