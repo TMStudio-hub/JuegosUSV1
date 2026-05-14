@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>USV1 GSF – ¡Adivina la Acción!</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -39,14 +39,14 @@
       --success: #06D6A0; --white: #F7FFF7;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
-    body { font-family: 'Nunito', sans-serif; background: var(--dark); color: var(--white); min-height: 100vh; overflow-x: hidden; }
+    body { font-family: 'Press Start 2P', 'Nunito', sans-serif; background: radial-gradient(circle at top, #2e4154 0%, #0c1823 45%, #081018 100%); color: var(--white); min-height: 100vh; overflow-x: hidden; }
     body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 20% 20%,#00a8a230 0%,transparent 50%), radial-gradient(ellipse at 80% 80%,#ff990020 0%,transparent 50%); pointer-events:none; z-index:0; }
 
     .screen { display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px 20px; position:relative; z-index:1; animation:fadeIn .4s ease; }
     .screen.active { display:flex; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
 
-    .logo-title { font-family:'Fredoka One',cursive; font-size:clamp(2rem,8vw,3rem); color:var(--fresh); text-shadow:0 4px 20px #00a8a260; line-height:1; text-align:center; }
+    .logo-title { font-family:'Press Start 2P','Fredoka One',cursive; font-size:clamp(1.8rem,7vw,2.8rem); color:var(--fresh); text-shadow:0 4px 20px #00a8a260; line-height:1.05; text-align:center; letter-spacing:.08em; }
     .brand-logo { display:block; width:min(280px,70vw); margin:0 auto 10px; filter:drop-shadow(0 14px 28px #00000035); object-fit:contain; border-radius:50%; clip-path:circle(49.2% at 50% 50%); background:transparent; }
     .brand-logo.brand-logo-sm { width:min(200px,52vw); margin-bottom:8px; }
     .logo-sub { font-size:.85rem; color:var(--amazon); font-weight:900; letter-spacing:2px; text-transform:uppercase; text-align:center; margin-top:4px; margin-bottom:20px; }
@@ -59,9 +59,9 @@
     .presenter-hidden { display:none; }
     .presenter-live-list .lb-row { background:#12252c; }
 
-    .card { background:var(--card); border-radius:20px; padding:22px 18px; width:100%; max-width:440px; box-shadow:0 12px 40px #00000060,0 0 0 1px #ffffff10; margin-bottom:14px; }
+    .card { background:linear-gradient(180deg,#09111b 0%,#122233 100%); border-radius:18px; padding:20px 16px; width:100%; max-width:440px; box-shadow:0 12px 40px #00000080,0 0 0 1px rgba(255,255,255,.08); margin-bottom:14px; border:2px solid rgba(255,255,255,.08); }
 
-    .btn { display:block; width:100%; max-width:320px; padding:15px 24px; border:none; border-radius:50px; font-family:'Fredoka One',cursive; font-size:1.2rem; cursor:pointer; text-align:center; transition:transform .15s; margin:8px auto 0; }
+    .btn { display:block; width:100%; max-width:320px; padding:14px 20px; border:none; border-radius:999px; font-family:'Press Start 2P','Fredoka One',cursive; font-size:1rem; cursor:pointer; text-align:center; transition:transform .15s; margin:8px auto 0; letter-spacing:.12em; }
     .btn:active { transform:scale(.96); }
     .btn-primary   { background:var(--amazon); color:var(--dark); box-shadow:0 6px 24px #ff990050; }
     .btn-secondary { background:var(--fresh); color:white; box-shadow:0 6px 24px #00a8a250; }
@@ -70,6 +70,14 @@
     .btn-sm { font-size:.9rem; padding:10px 18px; }
 
     .input-wrap { margin-bottom:12px; }
+    .pixel-text { font-family:'Press Start 2P',monospace; letter-spacing:.12em; }
+    .arcade-screen { max-width:520px; border:4px solid rgba(255,255,255,.12); box-shadow:0 0 0 1px rgba(255,255,255,.08), inset 0 0 0 1px rgba(255,255,255,.1); }
+    .arcade-ready { color:#4bedff; font-size:1rem; text-transform:uppercase; letter-spacing:.18em; margin-top:-4px; margin-bottom:14px; }
+    .score-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.12); border-radius:999px; padding:8px 14px; font-weight:900; }
+    .score-badge span { color:#FFD166; font-family:'Press Start 2P',monospace; font-size:1.2rem; }
+    .q-label { font-family:'Press Start 2P',monospace; font-size:1.1rem; text-align:center; margin-bottom:11px; color:var(--accent); line-height:1.2; }
+    .flag-panel { width:100%; max-width:440px; min-height:120px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:20px; background:#06111d; border:2px solid #00a8a2; color:var(--accent); font-size:5.5rem; font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif; }
+    .flag-panel.hidden { display:none; }
     .input-wrap label { display:block; font-size:.75rem; color:#aaa; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase; }
     input[type=text], input[type=password], input[type=number], textarea, select {
       width:100%; padding:11px 14px; border-radius:12px; border:2px solid #ffffff20;
@@ -106,8 +114,7 @@
     .q-counter { color:#aaa; font-size:.82rem; margin-bottom:5px; text-align:center; }
     .q-label { font-family:'Fredoka One',cursive; font-size:1.35rem; text-align:center; margin-bottom:11px; color:var(--accent); line-height:1.2; }
 
-.flag-panel { width:100%; max-width:440px; min-height:120px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:20px; background:#0a1a20; border:1px solid #ffffff15; color:var(--accent); font-size:4.2rem; }
-.flag-panel.hidden { display:none; }
+
 
 
     .feedback { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; font-family:'Fredoka One',cursive; font-size:2.6rem; pointer-events:none; opacity:0; }
@@ -377,7 +384,7 @@
   <div class="logo-title" id="welcome-title">Adivina la Acción</div>
   <div class="logo-sub" id="welcome-sub">Selecciona tu juego y conecta con tu equipo.</div>
   <div class="card">
-    <div class="input-wrap">
+    <div class="input-wrap" id="player-name-section">
       <label>Tu nombre</label>
       <input type="text" id="player-name" placeholder="Ej. María García" maxlength="25">
     </div>
@@ -556,8 +563,8 @@ function getArcadeRanking(){
 function saveArcadeRanking(list){
   save('flag_arcade_ranking',list);
 }
-function renderArcadeLeaderboard(){
-  const board = getArcadeRanking();
+function renderArcadeLeaderboard(list){
+  const board = list || getArcadeRanking();
   const el = document.getElementById('arcade-leaderboard');
   if(!el) return;
   if(!board.length){ el.innerHTML = '<div class="lb-empty">Aún no hay puntajes en el ranking.</div>'; return; }
@@ -580,14 +587,47 @@ function submitArcadeScore(){
     msg.innerHTML = '<div class="msg err">Escribe 3 letras para tus iniciales.</div>';
     return;
   }
-  const ranking = getArcadeRanking();
-  ranking.push({initials,score, time:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})});
-  ranking.sort((a,b)=>b.score-a.score);
-  if(ranking.length>10) ranking.length=10;
-  saveArcadeRanking(ranking);
-  msg.innerHTML = '<div class="msg ok">✅ ¡Listo! Tu puntaje quedó en el ranking.</div>';
-  initialsEl.disabled = true;
-  renderArcadeLeaderboard();
+  saveFlagScore(initials);
+}
+async function saveFlagScore(initials){
+  const entry = {initials,score,time:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})};
+  if(fbAvailable){
+    try{
+      const ref = firebaseDB.ref('flag_ranking');
+      const snap = await ref.once('value');
+      const data = snap.val();
+      const board = data ? Object.values(data) : [];
+      board.push(entry);
+      board.sort((a,b)=>b.score-a.score);
+      if(board.length>10) board.length=10;
+      const payload = {};
+      board.forEach((item,i)=>payload[i]=item);
+      await ref.set(payload);
+      renderArcadeLeaderboard(board);
+      document.getElementById('arcade-msg').innerHTML = '<div class="msg ok">✅ ¡Listo! Tu puntaje quedó en el ranking global.</div>';
+      document.getElementById('arcade-initials').disabled = true;
+      return;
+    } catch(e){ console.warn('Firebase saveFlagScore error',e); }
+  }
+  const board = getArcadeRanking();
+  board.push(entry);
+  board.sort((a,b)=>b.score-a.score);
+  if(board.length>10) board.length=10;
+  saveArcadeRanking(board);
+  document.getElementById('arcade-msg').innerHTML = '<div class="msg ok">✅ ¡Listo! Tu puntaje quedó en el ranking.</div>';
+  document.getElementById('arcade-initials').disabled = true;
+  renderArcadeLeaderboard(board);
+}
+async function initFlagRankingSync(){
+  if(!fbAvailable) return;
+  try{
+    const ref = firebaseDB.ref('flag_ranking');
+    ref.on('value', snap=>{
+      const data = snap.val();
+      const board = data ? Object.values(data) : [];
+      renderArcadeLeaderboard(board);
+    });
+  } catch(e){ console.warn('Firebase initFlagRankingSync error',e); }
 }
 
 async function addScore(name,score,room){
@@ -1580,11 +1620,11 @@ const showScreen=id=>{ document.querySelectorAll('.screen').forEach(s=>s.classLi
 async function startGame(){
   const n=document.getElementById('player-name').value.trim();
   const r=document.getElementById('room-code-input').value.trim().toUpperCase();
-  if(!n){ document.getElementById('player-name').focus(); return; }
   if(selectedGame==='flags'){
-    startFlagGame(n);
+    startFlagGame('PLAYER1');
     return;
   }
+  if(!n){ document.getElementById('player-name').focus(); return; }
   if(!r){ document.getElementById('room-code-input').focus(); return; }
   const rooms=getRooms();
   const roomExistsLocally=rooms.includes(r);
@@ -1611,18 +1651,21 @@ function updateWelcomeScreen(){
   const sub = document.getElementById('welcome-sub');
   const hint = document.getElementById('welcome-hint');
   const roomSection = document.getElementById('room-section');
+  const nameSection = document.getElementById('player-name-section');
   const playButton = document.getElementById('play-button');
   if(selectedGame==='flags'){
-    title.textContent = 'Demo Mundial de Banderas';
-    sub.textContent = 'Elige la bandera correcta y disfruta del juego gratis.';
-    hint.textContent = 'No necesitas código de sala para este demo. Solo ingresa tu nombre.';
+    title.textContent = 'READY PLAYER 1?';
+    sub.textContent = 'Demo Arcade de Banderas';
+    hint.textContent = 'Pulsa COMENZAR para encender la partida.';
     roomSection.style.display = 'none';
-    playButton.textContent = 'Jugar demo gratis';
+    nameSection.style.display = 'none';
+    playButton.textContent = 'COMENZAR';
   } else {
     title.textContent = 'Adivina la Acción';
     sub.textContent = 'Únete con tu equipo y juega con código de sala.';
     hint.textContent = 'Tu líder de sala te compartirá el código.';
     roomSection.style.display = '';
+    nameSection.style.display = '';
     playButton.textContent = '¡Jugar! 🎮';
   }
 }
@@ -1782,6 +1825,7 @@ window.addEventListener('load', ()=>{
   populateUrlGame();
   renderRoomSelect();
   initFirebaseSync();
+  initFlagRankingSync();
   if(getQueryParam('mode')==='host') startPresenter();
 });
 </script>
