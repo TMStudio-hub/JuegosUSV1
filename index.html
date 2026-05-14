@@ -39,14 +39,14 @@
       --success: #06D6A0; --white: #F7FFF7;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
-    body { font-family: 'Press Start 2P', 'Nunito', sans-serif; background: radial-gradient(circle at top, #2e4154 0%, #0c1823 45%, #081018 100%); color: var(--white); min-height: 100vh; overflow-x: hidden; }
-    body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 20% 20%,#00a8a230 0%,transparent 50%), radial-gradient(ellipse at 80% 80%,#ff990020 0%,transparent 50%); pointer-events:none; z-index:0; }
+    body { font-family: 'Press Start 2P', 'Nunito', sans-serif; background: radial-gradient(circle at top, #1a2738 0%, #081017 45%, #020609 100%); color: var(--white); min-height: 100vh; overflow-x: hidden; }
+    body::before { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent 0, transparent 18px, rgba(255,255,255,.02) 18px, rgba(255,255,255,.02) 19px), repeating-linear-gradient(90deg, transparent 0, transparent 18px, rgba(255,255,255,.02) 18px, rgba(255,255,255,.02) 19px), radial-gradient(circle at 20% 20%,#00a8a230 0%,transparent 40%), radial-gradient(circle at 80% 80%,#ff990020 0%,transparent 40%); pointer-events:none; z-index:0; }
 
     .screen { display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px 20px; position:relative; z-index:1; animation:fadeIn .4s ease; }
     .screen.active { display:flex; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
 
-    .logo-title { font-family:'Press Start 2P','Fredoka One',cursive; font-size:clamp(1.8rem,7vw,2.8rem); color:var(--fresh); text-shadow:0 4px 20px #00a8a260; line-height:1.05; text-align:center; letter-spacing:.08em; }
+    .logo-title { font-family:'Press Start 2P','Fredoka One',cursive; font-size:clamp(1.9rem,8vw,3rem); color:var(--fresh); text-shadow:0 0 24px rgba(0,255,255,.25); line-height:1.05; text-align:center; letter-spacing:.14em; }
     .brand-logo { display:block; width:min(280px,70vw); margin:0 auto 10px; filter:drop-shadow(0 14px 28px #00000035); object-fit:contain; border-radius:50%; clip-path:circle(49.2% at 50% 50%); background:transparent; }
     .brand-logo.brand-logo-sm { width:min(200px,52vw); margin-bottom:8px; }
     .logo-sub { font-size:.85rem; color:var(--amazon); font-weight:900; letter-spacing:2px; text-transform:uppercase; text-align:center; margin-top:4px; margin-bottom:20px; }
@@ -59,9 +59,9 @@
     .presenter-hidden { display:none; }
     .presenter-live-list .lb-row { background:#12252c; }
 
-    .card { background:linear-gradient(180deg,#09111b 0%,#122233 100%); border-radius:18px; padding:20px 16px; width:100%; max-width:440px; box-shadow:0 12px 40px #00000080,0 0 0 1px rgba(255,255,255,.08); margin-bottom:14px; border:2px solid rgba(255,255,255,.08); }
+    .card { background:linear-gradient(180deg,#041017 0%,#0f1e2d 100%); border-radius:18px; padding:20px 16px; width:100%; max-width:440px; box-shadow:0 0 0 1px rgba(255,255,255,.08), inset 0 0 0 1px rgba(0,255,255,.06); margin-bottom:14px; border:3px solid rgba(0,168,162,.3); }
 
-    .btn { display:block; width:100%; max-width:320px; padding:14px 20px; border:none; border-radius:999px; font-family:'Press Start 2P','Fredoka One',cursive; font-size:1rem; cursor:pointer; text-align:center; transition:transform .15s; margin:8px auto 0; letter-spacing:.12em; }
+    .btn { display:block; width:100%; max-width:320px; padding:12px 18px; border:none; border-radius:999px; font-family:'Press Start 2P','Fredoka One',cursive; font-size:.95rem; cursor:pointer; text-align:center; transition:transform .15s, box-shadow .2s; margin:8px auto 0; letter-spacing:.16em; text-transform:uppercase; }
     .btn:active { transform:scale(.96); }
     .btn-primary   { background:var(--amazon); color:var(--dark); box-shadow:0 6px 24px #ff990050; }
     .btn-secondary { background:var(--fresh); color:white; box-shadow:0 6px 24px #00a8a250; }
@@ -76,10 +76,12 @@
     .score-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.12); border-radius:999px; padding:8px 14px; font-weight:900; }
     .score-badge span { color:#FFD166; font-family:'Press Start 2P',monospace; font-size:1.2rem; }
     .q-label { font-family:'Press Start 2P',monospace; font-size:1.1rem; text-align:center; margin-bottom:11px; color:var(--accent); line-height:1.2; }
-      .flag-panel { width:100%; max-width:440px; min-height:140px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:20px; background:#06111d; border:3px solid #00a8a2; color:var(--accent); box-shadow:0 0 0 1px rgba(0,168,162,.2); }
+    .flag-panel { width:100%; max-width:440px; min-height:140px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:18px; background:#02101a; border:4px solid #00a8a2; box-shadow:0 0 0 2px rgba(0,255,255,.12); }
     .flag-panel.hidden { display:none; }
-    .flag-panel img { display:block; width:100%; max-width:360px; height:auto; border-radius:16px; }
-    .flag-panel .flag-fallback { font-size:4.2rem; font-family:'Press Start 2P',monospace; letter-spacing:.16em; color:#ffd166; }
+    .flag-panel img { display:block; width:100%; max-width:400px; height:auto; border-radius:14px; image-rendering:pixelated; }
+    .flag-panel .flag-fallback { font-size:3.8rem; font-family:'Press Start 2P',monospace; letter-spacing:.16em; color:#ffd166; }
+    .flag-panel img { display:block; width:100%; max-width:400px; height:auto; border-radius:14px; image-rendering:pixelated; }
+    .flag-panel .flag-fallback { font-size:3.8rem; font-family:'Press Start 2P',monospace; letter-spacing:.16em; color:#ffd166; }
     .input-wrap label { display:block; font-size:.75rem; color:#aaa; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase; }
     input[type=text], input[type=password], input[type=number], textarea, select {
       width:100%; padding:11px 14px; border-radius:12px; border:2px solid #ffffff20;
@@ -105,7 +107,8 @@
     .stage svg { display:block; margin:auto; }
 
     .options-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; width:100%; max-width:440px; margin-bottom:12px; }
-    .opt-btn { padding:13px 8px; border-radius:13px; border:2px solid #ffffff20; background:var(--card); color:var(--white); font-family:'Nunito',sans-serif; font-weight:700; font-size:.9rem; cursor:pointer; text-align:center; transition:all .2s; line-height:1.3; }
+    .opt-btn { padding:14px 10px; border-radius:12px; border:2px solid #00a8a2; background:#081724; color:#f8f8f8; font-family:'Press Start 2P',monospace; font-weight:700; font-size:.85rem; cursor:pointer; text-align:center; transition:all .2s; line-height:1.4; box-shadow:inset 0 0 0 1px rgba(255,255,255,.05); }
+    .opt-btn:hover { background:rgba(0,168,162,.12); }
     .opt-btn:active { transform:scale(.95); }
     .opt-btn.correct { background:var(--success); border-color:var(--success); color:var(--dark); }
     .opt-btn.wrong   { background:var(--danger);  border-color:var(--danger);  color:white; }
@@ -376,13 +379,13 @@
     <div class="section-lbl">Selecciona tu juego</div>
     <button class="btn btn-primary" style="margin-top:0;" onclick="chooseGame('actions')">Adivina la Acción</button>
     <button class="btn btn-secondary" onclick="chooseGame('flags')">Demo Mundial de Banderas</button>
-    <p class="hint" style="margin-top:12px;">La demo de banderas es gratis y no necesita sala. El juego de acciones funciona en equipo con código de sala.</p>
+    <p class="hint" style="margin-top:12px; color:#7fb5ce;">La demo de banderas es gratis y no necesita sala. El juego de acciones funciona en equipo con código de sala.</p>
   </div>
   <div class="card">
     <div class="section-lbl">Ideas de mini juegos</div>
     <textarea id="idea-note" rows="4" placeholder="Escribe tu idea aquí..." style="width:100%;background:#09111b;color:#fff;border:2px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;font-family:'Press Start 2P',monospace;resize:none;"></textarea>
     <button class="btn btn-secondary" style="margin-top:12px;" onclick="saveIdea()">Guardar idea</button>
-    <div id="idea-msg" style="margin-top:10px;color:#aaa;font-size:.8rem;text-align:center;"></div>
+    <div id="idea-msg" style="margin-top:10px;color:#7fb5ce;font-size:.78rem;text-align:center;"></div>
     <div id="idea-list" style="margin-top:12px;"></div>
   </div>
 </div>
@@ -644,14 +647,14 @@ async function initIdeaBucketSync(){
 function renderFlagGraphic(code){
   const svg = {
     BR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#009b3a"/><polygon points="30,6 52,20 30,34 8,20" fill="#ffdf00"/><circle cx="30" cy="20" r="9" fill="#002776"/><circle cx="30" cy="20" r="3.2" fill="#fff"/></svg>',
-    AR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#74acdf"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#74acdf"/><circle cx="30" cy="20" r="6" fill="#ffd700"/></svg>',
+    AR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#74acdf"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#74acdf"/><circle cx="30" cy="20" r="6" fill="#ffd700"/><path d="M30 10 L33 20 L30 17 L27 20 Z" fill="#ffd700"/></svg>',
     FR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#0055a4"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ef4135"/></svg>',
     ES: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#c60b1e"/><rect y="8" width="60" height="8" fill="#ffc400"/><rect y="24" width="60" height="8" fill="#ffc400"/></svg>',
     JP: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="9" fill="#bc002d"/></svg>',
-    MX: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#006847"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce1126"/></svg>',
+    MX: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#006847"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce1126"/><circle cx="30" cy="20" r="5" fill="#00843d"/></svg>',
     DE: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="13.33" fill="#000"/><rect y="13.33" width="60" height="13.34" fill="#dd0000"/><rect y="26.67" width="60" height="13.33" fill="#ffce00"/></svg>',
-    AU: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#00247d"/><polygon points="14,0 24,18 14,36 18,18" fill="#fff"/><polygon points="22,0 32,18 22,36 26,18" fill="#cc142b"/></svg>',
-    CA: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="12" height="40" fill="#d52b1e"/><rect x="48" width="12" height="40" fill="#d52b1e"/><rect x="12" width="36" height="40" fill="#fff"/><polygon points="30,8 32,16 39,16 33,20 35,28 30,22 25,28 27,20 21,16 28,16" fill="#d52b1e"/></svg>',
+    AU: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#00247d"/><path d="M0 0 L60 40 M60 0 L0 40" stroke="#fff" stroke-width="3"/><path d="M28 0 L32 0 L32 40 L28 40 Z M0 18 L60 18 L60 22 L0 22 Z" fill="#cc142b"/><circle cx="44" cy="28" r="3" fill="#fff"/></svg>',
+    CA: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="12" height="40" fill="#d52b1e"/><rect x="48" width="12" height="40" fill="#d52b1e"/><rect x="12" width="36" height="40" fill="#fff"/><polygon points="30,6 33,18 38,18 34,22 36,34 30,28 24,34 26,22 22,18 27,18" fill="#d52b1e"/></svg>',
     IT: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce2b37"/></svg>'
   };
   const markup = svg[code] || '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#444"/><text x="30" y="25" font-family="Arial,monospace" font-size="14" fill="#fff" text-anchor="middle">'+code+'</text></svg>';
@@ -1755,10 +1758,10 @@ function updateWelcomeScreen(){
   if(selectedGame==='flags'){
     title.textContent = 'READY PLAYER 1?';
     sub.textContent = 'Demo Arcade de Banderas';
-    hint.textContent = 'Pulsa COMENZAR para encender la partida.';
+    hint.textContent = 'Presiona START para jugar.';
     roomSection.style.display = 'none';
     nameSection.style.display = 'none';
-    playButton.textContent = 'COMENZAR';
+    playButton.textContent = 'START';
   } else {
     title.textContent = 'Adivina la Acción';
     sub.textContent = 'Únete con tu equipo y juega con código de sala.';
@@ -1779,7 +1782,7 @@ function startFlagGame(name){
   currentPlayerFinished = false;
   document.getElementById('game-room-badge').textContent = '🌍 Demo Mundial';
   showScreen('s-game');
-  setGameStatus('Selecciona la bandera correcta antes de que termine el tiempo.');
+  setGameStatus('Selecciona la bandera correcta.');
   loadQ();
 }
 
