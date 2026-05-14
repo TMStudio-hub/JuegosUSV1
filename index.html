@@ -76,8 +76,10 @@
     .score-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.12); border-radius:999px; padding:8px 14px; font-weight:900; }
     .score-badge span { color:#FFD166; font-family:'Press Start 2P',monospace; font-size:1.2rem; }
     .q-label { font-family:'Press Start 2P',monospace; font-size:1.1rem; text-align:center; margin-bottom:11px; color:var(--accent); line-height:1.2; }
-    .flag-panel { width:100%; max-width:440px; min-height:120px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:20px; background:#06111d; border:2px solid #00a8a2; color:var(--accent); font-size:5.5rem; font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif; }
+      .flag-panel { width:100%; max-width:440px; min-height:140px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:20px; background:#06111d; border:3px solid #00a8a2; color:var(--accent); box-shadow:0 0 0 1px rgba(0,168,162,.2); }
     .flag-panel.hidden { display:none; }
+    .flag-panel img { display:block; width:100%; max-width:360px; height:auto; border-radius:16px; }
+    .flag-panel .flag-fallback { font-size:4.2rem; font-family:'Press Start 2P',monospace; letter-spacing:.16em; color:#ffd166; }
     .input-wrap label { display:block; font-size:.75rem; color:#aaa; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase; }
     input[type=text], input[type=password], input[type=number], textarea, select {
       width:100%; padding:11px 14px; border-radius:12px; border:2px solid #ffffff20;
@@ -376,6 +378,13 @@
     <button class="btn btn-secondary" onclick="chooseGame('flags')">Demo Mundial de Banderas</button>
     <p class="hint" style="margin-top:12px;">La demo de banderas es gratis y no necesita sala. El juego de acciones funciona en equipo con código de sala.</p>
   </div>
+  <div class="card">
+    <div class="section-lbl">Ideas de mini juegos</div>
+    <textarea id="idea-note" rows="4" placeholder="Escribe tu idea aquí..." style="width:100%;background:#09111b;color:#fff;border:2px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;font-family:'Press Start 2P',monospace;resize:none;"></textarea>
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="saveIdea()">Guardar idea</button>
+    <div id="idea-msg" style="margin-top:10px;color:#aaa;font-size:.8rem;text-align:center;"></div>
+    <div id="idea-list" style="margin-top:12px;"></div>
+  </div>
 </div>
 
 <!-- ===== WELCOME ===== -->
@@ -559,6 +568,94 @@ async function saveRoomScores(room,s){
 
 function getArcadeRanking(){
   return load('flag_arcade_ranking',[]);
+}
+function saveArcadeRanking(list){
+  save('flag_arcade_ranking',list);
+}
+function renderArcadeLeaderboard(list){
+  const board = list || getArcadeRanking();
+  const el = document.getElementById('arcade-leaderboard');
+  if(!el) return;
+  if(!board.length){ el.innerHTML = '<div class="lb-empty">Aún no hay puntajes en el ranking.</div>'; return; }
+  el.innerHTML = board.map((item,i)=>`
+    <div class="lb-row" style="animation-delay:${i*20}ms">
+      <div class="lb-rank ${i<3?'lb-rank-'+(i+1):'lb-rank-n'}">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${item.initials}</div>
+        <div class="lb-meta">${item.time}</div>
+      </div>
+      <div class="lb-score">${item.score} pts</div>
+    </div>`).join('');
+}
+function getIdeaBucket(){
+  return load('mini_game_ideas',[]);
+}
+function renderIdeas(list){
+  const bucket = list || getIdeaBucket();
+  const el = document.getElementById('idea-list');
+  if(!el) return;
+  if(!bucket.length){ el.innerHTML = '<div class="lb-empty">Aún no hay ideas guardadas.</div>'; return; }
+  el.innerHTML = bucket.map(item=>`
+    <div class="lb-row" style="padding:10px 12px; background:rgba(255,255,255,.05); margin-bottom:8px; border-radius:12px;">
+      <div class="lb-name">${item.text}</div>
+      <div class="lb-meta" style="color:#7f9faa;font-size:.72rem;margin-top:6px;">${item.time}</div>
+    </div>`).join('');
+}
+async function saveIdea(){
+  const textarea = document.getElementById('idea-note');
+  const msg = document.getElementById('idea-msg');
+  if(!textarea || !msg) return;
+  const note = textarea.value.trim();
+  if(!note){ msg.textContent='Escribe una idea primero.'; return; }
+  const entry = {text:note, time:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})};
+  const list = getIdeaBucket();
+  list.unshift(entry);
+  if(list.length>20) list.length=20;
+  save('mini_game_ideas',list);
+  msg.textContent='✅ Idea guardada';
+  textarea.value='';
+  renderIdeas(list);
+  if(fbAvailable){
+    try{
+      const ref = firebaseDB.ref('ideas_bucket');
+      const snap = await ref.once('value');
+      const data = snap.val();
+      const remote = data ? Object.values(data) : [];
+      remote.unshift(entry);
+      if(remote.length>20) remote.length=20;
+      const payload = {};
+      remote.forEach((item,i)=>payload[i]=item);
+      await ref.set(payload);
+    } catch(e){ console.warn('Firebase saveIdea error',e); }
+  }
+}
+async function initIdeaBucketSync(){
+  if(!fbAvailable) return;
+  try{
+    const ref = firebaseDB.ref('ideas_bucket');
+    ref.on('value', snap=>{
+      const data = snap.val();
+      const list = data ? Object.values(data) : [];
+      renderIdeas(list);
+      save('mini_game_ideas', list);
+    });
+  } catch(e){ console.warn('Firebase initIdeaBucketSync error',e); }
+}
+function renderFlagGraphic(code){
+  const svg = {
+    BR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#009b3a"/><polygon points="30,6 52,20 30,34 8,20" fill="#ffdf00"/><circle cx="30" cy="20" r="9" fill="#002776"/><circle cx="30" cy="20" r="3.2" fill="#fff"/></svg>',
+    AR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#74acdf"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#74acdf"/><circle cx="30" cy="20" r="6" fill="#ffd700"/></svg>',
+    FR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#0055a4"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ef4135"/></svg>',
+    ES: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#c60b1e"/><rect y="8" width="60" height="8" fill="#ffc400"/><rect y="24" width="60" height="8" fill="#ffc400"/></svg>',
+    JP: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="9" fill="#bc002d"/></svg>',
+    MX: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#006847"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce1126"/></svg>',
+    DE: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="13.33" fill="#000"/><rect y="13.33" width="60" height="13.34" fill="#dd0000"/><rect y="26.67" width="60" height="13.33" fill="#ffce00"/></svg>',
+    AU: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#00247d"/><polygon points="14,0 24,18 14,36 18,18" fill="#fff"/><polygon points="22,0 32,18 22,36 26,18" fill="#cc142b"/></svg>',
+    CA: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="12" height="40" fill="#d52b1e"/><rect x="48" width="12" height="40" fill="#d52b1e"/><rect x="12" width="36" height="40" fill="#fff"/><polygon points="30,8 32,16 39,16 33,20 35,28 30,22 25,28 27,20 21,16 28,16" fill="#d52b1e"/></svg>',
+    IT: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce2b37"/></svg>'
+  };
+  const markup = svg[code] || '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#444"/><text x="30" y="25" font-family="Arial,monospace" font-size="14" fill="#fff" text-anchor="middle">'+code+'</text></svg>';
+  return `<img src="data:image/svg+xml;utf8,${encodeURIComponent(markup)}" alt="${code}"/>`;
 }
 function saveArcadeRanking(list){
   save('flag_arcade_ranking',list);
@@ -1293,14 +1390,16 @@ let QUESTIONS = getQuestions() || [
 ];
 
 const FLAG_QUESTIONS = [
-  {name:"Brasil", label:"¿De qué país es esta bandera?", flag:"🇧🇷", options:["Brasil","Argentina","México","España"], answer:"Brasil"},
-  {name:"Argentina", label:"¿De qué país es esta bandera?", flag:"🇦🇷", options:["Argentina","Francia","Chile","Portugal"], answer:"Argentina"},
-  {name:"Francia", label:"¿De qué país es esta bandera?", flag:"🇫🇷", options:["Francia","Italia","Países Bajos","Rumania"], answer:"Francia"},
-  {name:"España", label:"¿De qué país es esta bandera?", flag:"🇪🇸", options:["España","Colombia","Perú","México"], answer:"España"},
-  {name:"Japón", label:"¿De qué país es esta bandera?", flag:"🇯🇵", options:["Japón","Corea del Sur","China","Tailandia"], answer:"Japón"},
-  {name:"México", label:"¿De qué país es esta bandera?", flag:"🇲🇽", options:["México","Brasil","Argentina","Estados Unidos"], answer:"México"},
-  {name:"Alemania", label:"¿De qué país es esta bandera?", flag:"🇩🇪", options:["Alemania","Bélgica","Austria","Países Bajos"], answer:"Alemania"},
-  {name:"Australia", label:"¿De qué país es esta bandera?", flag:"🇦🇺", options:["Australia","Nueva Zelanda","Reino Unido","Canadá"], answer:"Australia"}
+  {name:"Brasil", label:"¿De qué país es esta bandera?", code:"BR", options:["Brasil","Argentina","México","España"], answer:"Brasil"},
+  {name:"Argentina", label:"¿De qué país es esta bandera?", code:"AR", options:["Argentina","Francia","Chile","Portugal"], answer:"Argentina"},
+  {name:"Francia", label:"¿De qué país es esta bandera?", code:"FR", options:["Francia","Italia","Países Bajos","Rumania"], answer:"Francia"},
+  {name:"España", label:"¿De qué país es esta bandera?", code:"ES", options:["España","Colombia","Perú","México"], answer:"España"},
+  {name:"Japón", label:"¿De qué país es esta bandera?", code:"JP", options:["Japón","Corea del Sur","China","Tailandia"], answer:"Japón"},
+  {name:"México", label:"¿De qué país es esta bandera?", code:"MX", options:["México","Brasil","Argentina","Estados Unidos"], answer:"México"},
+  {name:"Alemania", label:"¿De qué país es esta bandera?", code:"DE", options:["Alemania","Bélgica","Austria","Países Bajos"], answer:"Alemania"},
+  {name:"Australia", label:"¿De qué país es esta bandera?", code:"AU", options:["Australia","Nueva Zelanda","Reino Unido","Canadá"], answer:"Australia"},
+  {name:"Canadá", label:"¿De qué país es esta bandera?", code:"CA", options:["Canadá","Estados Unidos","Reino Unido","Japón"], answer:"Canadá"},
+  {name:"Italia", label:"¿De qué país es esta bandera?", code:"IT", options:["Italia","México","Francia","Grecia"], answer:"Italia"}
 ];
 
 // ============================================================
@@ -1675,7 +1774,7 @@ function startFlagGame(name){
   pRoom = 'Demo Banderas';
   score = 0;
   qIdx = 0;
-  deck = shuffle(FLAG_QUESTIONS).slice(0, Math.min(6, FLAG_QUESTIONS.length));
+  deck = shuffle(FLAG_QUESTIONS).slice(0, Math.min(10, FLAG_QUESTIONS.length));
   currentGameLimit = 12;
   currentPlayerFinished = false;
   document.getElementById('game-room-badge').textContent = '🌍 Demo Mundial';
@@ -1696,7 +1795,7 @@ function loadQ(){
   const flagPanel=document.getElementById('q-flag');
   if(selectedGame==='flags'){
     flagPanel.classList.remove('hidden');
-    flagPanel.textContent = q.flag || '🏳️';
+    flagPanel.innerHTML = renderFlagGraphic(q.code);
     document.getElementById('sm-svg').innerHTML = '';
   } else {
     flagPanel.classList.add('hidden');
@@ -1826,6 +1925,8 @@ window.addEventListener('load', ()=>{
   renderRoomSelect();
   initFirebaseSync();
   initFlagRankingSync();
+  initIdeaBucketSync();
+  renderIdeas();
   if(getQueryParam('mode')==='host') startPresenter();
 });
 </script>
