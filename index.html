@@ -106,8 +106,9 @@
     .q-counter { color:#aaa; font-size:.82rem; margin-bottom:5px; text-align:center; }
     .q-label { font-family:'Fredoka One',cursive; font-size:1.35rem; text-align:center; margin-bottom:11px; color:var(--accent); line-height:1.2; }
 
-    .progress-wrap { width:100%; background:#ffffff15; border-radius:10px; height:5px; margin-bottom:12px; }
-    .progress-bar  { height:5px; border-radius:10px; background:linear-gradient(90deg,var(--fresh),var(--amazon)); transition:width .4s; }
+.flag-panel { width:100%; max-width:440px; min-height:120px; display:flex; align-items:center; justify-content:center; margin:16px auto 8px; border-radius:20px; background:#0a1a20; border:1px solid #ffffff15; color:var(--accent); font-size:4.2rem; }
+.flag-panel.hidden { display:none; }
+
 
     .feedback { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; font-family:'Fredoka One',cursive; font-size:2.6rem; pointer-events:none; opacity:0; }
     .feedback.show { animation:flash .65s ease forwards; }
@@ -358,50 +359,35 @@
   </div>
 </div>
 
-<div class="screen" id="s-presenter">
-  <img class="brand-logo brand-logo-sm" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
-  <div class="logo-sub" id="presenter-subtitle">Lobby en pantalla</div>
-  <div class="presenter-shell">
-    <div class="card presenter-card presenter-section">
-      <div class="section-lbl">Sala: <span id="presenter-room" style="color:var(--accent);"></span></div>
-      <div class="room-code-display" id="presenter-room-code">----</div>
-      <p class="hint" id="presenter-status-text" style="margin-top:0;">Control de sala todavía no abrió el acceso.</p>
-      <div id="presenter-qr-wrap" class="qr-shell">
-        <div id="presenter-qr"></div>
-        <p class="hint" style="margin:0;">Escanea este QR para entrar directo a la sala.</p>
-      </div>
-      <div id="presenter-question-wrap" class="presenter-hidden">
-        <div class="score-badge" style="margin-bottom:12px;"><span id="presenter-q-count">Pregunta 0 de 0</span></div>
-        <div class="q-label" id="presenter-q" style="font-size:1.4rem;min-height:72px;">Esperando la primera pregunta.</div>
-        <div id="presenter-options" class="options-grid" style="margin-top:14px;"></div>
-        <div id="presenter-answer" class="presenter-answer">Respuesta correcta:</div>
-      </div>
-    </div>
-    <div class="card presenter-card presenter-section">
-      <div class="section-lbl">👥 Jugadores y puntos</div>
-      <div class="arb-live-summary" id="presenter-live-summary"></div>
-      <div id="presenter-live-players" class="lb-empty presenter-live-list">Esperando jugadores...</div>
-      <button class="btn btn-secondary btn-sm" style="max-width:240px;" onclick="exitPresenter()">Cerrar pantalla</button>
-    </div>
+<div class="screen active" id="s-splash">
+  <img class="brand-logo" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
+  <div class="logo-title">Bienvenido a USV1 GSF</div>
+  <div class="logo-sub">Elige tu juego y empieza rápido.</div>
+  <div class="card">
+    <div class="section-lbl">Selecciona tu juego</div>
+    <button class="btn btn-primary" style="margin-top:0;" onclick="chooseGame('actions')">Adivina la Acción</button>
+    <button class="btn btn-secondary" onclick="chooseGame('flags')">Demo Mundial de Banderas</button>
+    <p class="hint" style="margin-top:12px;">La demo de banderas es gratis y no necesita sala. El juego de acciones funciona en equipo con código de sala.</p>
   </div>
 </div>
 
 <!-- ===== WELCOME ===== -->
-<div class="screen active" id="s-welcome">
+<div class="screen" id="s-welcome">
   <img class="brand-logo" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
-  <div class="logo-sub">¡Adivina la Acción!</div>
+  <div class="logo-title" id="welcome-title">Adivina la Acción</div>
+  <div class="logo-sub" id="welcome-sub">Selecciona tu juego y conecta con tu equipo.</div>
   <div class="card">
     <div class="input-wrap">
       <label>Tu nombre</label>
       <input type="text" id="player-name" placeholder="Ej. María García" maxlength="25">
     </div>
-    <div class="input-wrap">
+    <div class="input-wrap" id="room-section">
       <label>Código de sala</label>
       <input type="text" id="room-code-input" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;font-family:'Fredoka One',cursive;font-size:1.1rem;letter-spacing:2px;">
     </div>
-    <p class="hint">Tu líder de sala te compartirá el código.</p>
+    <p class="hint" id="welcome-hint">Tu líder de sala te compartirá el código.</p>
   </div>
-  <button class="btn btn-primary" onclick="startGame()">¡Jugar! 🎮</button>
+  <button class="btn btn-primary" id="play-button" onclick="startGame()">¡Jugar! 🎮</button>
   <p class="hint" style="margin-top:12px;">Admin: toca ⚙️ para configurar</p>
 </div>
 
@@ -440,6 +426,7 @@
   <div class="stage" style="width:100%;max-width:440px;">
     <svg id="sm-svg" width="100%" viewBox="0 0 220 200" style="max-height:165px;"></svg>
   </div>
+  <div id="q-flag" class="flag-panel hidden"></div>
   <div class="q-label" id="q-lbl"></div>
   <div class="options-grid" id="opts"></div>
   <p class="hint" id="game-status-note" style="margin-top:10px;min-height:20px;"></p>
@@ -559,6 +546,29 @@ function getQueryParam(name){
 function populateRoomFromUrl(){
   const room = getQueryParam('room');
   if(room){ document.getElementById('room-code-input').value = room.toUpperCase(); }
+}
+
+function getGameFromUrl(){
+  const game = getQueryParam('game');
+  if(game==='flags' || game==='actions') return game;
+  return '';
+}
+
+function populateUrlGame(){
+  const game = getGameFromUrl();
+  const room = getQueryParam('room');
+  const name = getQueryParam('name');
+  if(game) selectedGame = game;
+  if(!game && room) selectedGame = 'actions';
+  updateWelcomeScreen();
+  if(name){ document.getElementById('player-name').value = decodeURIComponent(name); }
+  if(game==='flags' && name){
+    startFlagGame(decodeURIComponent(name));
+    return;
+  }
+  if(game==='flags' || room){
+    showScreen('s-welcome');
+  }
 }
 
 function generateRoomCode(){
@@ -1181,6 +1191,17 @@ let QUESTIONS = getQuestions() || [
   {name:"Celebrar meta",  label:"¿Qué hace el asociado?",  anim:"celebrate", options:["Celebrar meta","Reportar","Limpiar","Stretching"],answer:"Celebrar meta"}
 ];
 
+const FLAG_QUESTIONS = [
+  {name:"Brasil", label:"¿De qué país es esta bandera?", flag:"🇧🇷", options:["Brasil","Argentina","México","España"], answer:"Brasil"},
+  {name:"Argentina", label:"¿De qué país es esta bandera?", flag:"🇦🇷", options:["Argentina","Francia","Chile","Portugal"], answer:"Argentina"},
+  {name:"Francia", label:"¿De qué país es esta bandera?", flag:"🇫🇷", options:["Francia","Italia","Países Bajos","Rumania"], answer:"Francia"},
+  {name:"España", label:"¿De qué país es esta bandera?", flag:"🇪🇸", options:["España","Colombia","Perú","México"], answer:"España"},
+  {name:"Japón", label:"¿De qué país es esta bandera?", flag:"🇯🇵", options:["Japón","Corea del Sur","China","Tailandia"], answer:"Japón"},
+  {name:"México", label:"¿De qué país es esta bandera?", flag:"🇲🇽", options:["México","Brasil","Argentina","Estados Unidos"], answer:"México"},
+  {name:"Alemania", label:"¿De qué país es esta bandera?", flag:"🇩🇪", options:["Alemania","Bélgica","Austria","Países Bajos"], answer:"Alemania"},
+  {name:"Australia", label:"¿De qué país es esta bandera?", flag:"🇦🇺", options:["Australia","Nueva Zelanda","Reino Unido","Canadá"], answer:"Australia"}
+];
+
 // ============================================================
 //  ADMIN
 // ============================================================
@@ -1490,6 +1511,7 @@ async function clearRoomScores(){
 // ============================================================
 //  GAME
 // ============================================================
+let selectedGame='actions';
 let pName='', pRoom='', score=0, qIdx=-1, timerInt=null, tLeft=15, currentGameLimit=15, answered=false, deck=[];
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const showScreen=id=>{ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
@@ -1498,6 +1520,10 @@ async function startGame(){
   const n=document.getElementById('player-name').value.trim();
   const r=document.getElementById('room-code-input').value.trim().toUpperCase();
   if(!n){ document.getElementById('player-name').focus(); return; }
+  if(selectedGame==='flags'){
+    startFlagGame(n);
+    return;
+  }
   if(!r){ document.getElementById('room-code-input').focus(); return; }
   const rooms=getRooms();
   const roomExistsLocally=rooms.includes(r);
@@ -1513,6 +1539,47 @@ async function startGame(){
   await joinLobby(r,n);
 }
 
+function chooseGame(mode){
+  selectedGame = mode;
+  updateWelcomeScreen();
+  showScreen('s-welcome');
+}
+
+function updateWelcomeScreen(){
+  const title = document.getElementById('welcome-title');
+  const sub = document.getElementById('welcome-sub');
+  const hint = document.getElementById('welcome-hint');
+  const roomSection = document.getElementById('room-section');
+  const playButton = document.getElementById('play-button');
+  if(selectedGame==='flags'){
+    title.textContent = 'Demo Mundial de Banderas';
+    sub.textContent = 'Elige la bandera correcta y disfruta del juego gratis.';
+    hint.textContent = 'No necesitas código de sala para este demo. Solo ingresa tu nombre.';
+    roomSection.style.display = 'none';
+    playButton.textContent = 'Jugar demo gratis';
+  } else {
+    title.textContent = 'Adivina la Acción';
+    sub.textContent = 'Únete con tu equipo y juega con código de sala.';
+    hint.textContent = 'Tu líder de sala te compartirá el código.';
+    roomSection.style.display = '';
+    playButton.textContent = '¡Jugar! 🎮';
+  }
+}
+
+function startFlagGame(name){
+  pName = name;
+  pRoom = 'Demo Banderas';
+  score = 0;
+  qIdx = -1;
+  deck = shuffle(FLAG_QUESTIONS).slice(0, Math.min(6, FLAG_QUESTIONS.length));
+  currentGameLimit = 12;
+  currentPlayerFinished = false;
+  document.getElementById('game-room-badge').textContent = '🌍 Demo Mundial';
+  showScreen('s-game');
+  setGameStatus('Selecciona la bandera correcta antes de que termine el tiempo.');
+  loadQ();
+}
+
 function loadQ(){
   if(qIdx>=deck.length){ endGame(); return; }
   answered=false;
@@ -1522,7 +1589,16 @@ function loadQ(){
   document.getElementById('prog').style.width=`${qIdx/deck.length*100}%`;
   document.getElementById('q-cnt').textContent=`Pregunta ${qIdx+1} de ${deck.length}`;
   document.getElementById('q-lbl').textContent=q.label;
-  document.getElementById('sm-svg').innerHTML=`<g>${ANIMS[q.anim]?ANIMS[q.anim].build():ANIMS.stow.build()}</g>`;
+  const flagPanel=document.getElementById('q-flag');
+  if(selectedGame==='flags'){
+    flagPanel.classList.remove('hidden');
+    flagPanel.textContent = q.flag || '🏳️';
+    document.getElementById('sm-svg').innerHTML = '';
+  } else {
+    flagPanel.classList.add('hidden');
+    flagPanel.textContent = '';
+    document.getElementById('sm-svg').innerHTML=`<g>${ANIMS[q.anim]?ANIMS[q.anim].build():ANIMS.stow.build()}</g>`;
+  }
   const opts=document.getElementById('opts'); opts.innerHTML='';
   shuffle(q.options).forEach(opt=>{
     const b=document.createElement('button');
@@ -1595,9 +1671,14 @@ async function endGame(){
   document.getElementById('r-name').textContent=pName;
   document.getElementById('r-score').textContent=score+' pts';
   document.getElementById('r-rank').textContent=r;
-  const all=await getRoomScores(pRoom);
-  document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en esta sala`:'Primero en cerrar ruta en esta sala.';
-  document.getElementById('r-room-label').textContent='🚪 Sala: '+pRoom;
+  if(selectedGame==='flags'){
+    document.getElementById('r-position').textContent='¡Has jugado el demo de banderas!';
+    document.getElementById('r-room-label').textContent='🌍 Demo Mundial de Banderas';
+  } else {
+    const all=await getRoomScores(pRoom);
+    document.getElementById('r-position').textContent=all.length>1?`Lugar #${pos} de ${all.length} en esta sala`:'Primero en cerrar ruta en esta sala.';
+    document.getElementById('r-room-label').textContent='🚪 Sala: '+pRoom;
+  }
   showScreen('s-result');
 }
 
@@ -1613,6 +1694,7 @@ function restart(){
 
 window.addEventListener('load', ()=>{
   populateRoomFromUrl();
+  populateUrlGame();
   renderRoomSelect();
   initFirebaseSync();
   if(getQueryParam('mode')==='host') startPresenter();
