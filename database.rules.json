@@ -21,6 +21,14 @@
     "sessions": {
       ".read": true,
       ".write": true
+    },
+    "flag_ranking": {
+      ".read": true,
+      ".write": true
+    },
+    "ideas_bucket": {
+      ".read": true,
+      ".write": true
     }
   }
 }

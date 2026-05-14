@@ -3,13 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
 <title>USV1 GSF – ¡Adivina la Acción!</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   const FIREBASE_ENABLED = true;
+  const AUTH_REQUIRED = false;
+  const AUTH_ALLOWED_EMAILS = [];
+  const AUTH_ALLOWED_DOMAINS = [];
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyDMhWqU_cWAdEMvHn18ubXi4gKypj0nvEk",
     authDomain: "juegosusv1-947476458528.firebaseapp.com",
@@ -20,15 +25,18 @@
     appId: "1:596541758519:web:7cbc381090bd728e5e73b2"
   };
   let firebaseDB = null;
+  let firebaseAuth = null;
   let fbAvailable = false;
   try {
     if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
       firebase.initializeApp(FIREBASE_CONFIG);
     }
+    firebaseAuth = typeof firebase.auth === 'function' ? firebase.auth() : null;
     firebaseDB = firebase.database();
     fbAvailable = true;
   } catch (error) {
     console.warn('Firebase no disponible:', error);
+    firebaseAuth = null;
     fbAvailable = false;
   }
 </script>
@@ -61,13 +69,17 @@
 
     .card { background:linear-gradient(180deg,#041017 0%,#0f1e2d 100%); border-radius:18px; padding:20px 16px; width:100%; max-width:440px; box-shadow:0 0 0 1px rgba(255,255,255,.08), inset 0 0 0 1px rgba(0,255,255,.06); margin-bottom:14px; border:3px solid rgba(0,168,162,.3); }
 
-    .btn { display:block; width:100%; max-width:320px; padding:12px 18px; border:none; border-radius:999px; font-family:'Press Start 2P','Fredoka One',cursive; font-size:.95rem; cursor:pointer; text-align:center; transition:transform .15s, box-shadow .2s; margin:8px auto 0; letter-spacing:.16em; text-transform:uppercase; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; width:auto; max-width:none; min-height:46px; padding:12px 18px; border:none; border-radius:999px; font-family:'Press Start 2P','Fredoka One',cursive; font-size:.95rem; cursor:pointer; text-align:center; transition:transform .15s, box-shadow .2s, background .2s; margin:8px 0 0; letter-spacing:.08em; text-transform:uppercase; line-height:1.2; white-space:normal; }
+    .screen > .btn, .card > .btn, .qr-shell > .btn { display:flex; width:100%; max-width:320px; margin:8px auto 0; }
     .btn:active { transform:scale(.96); }
     .btn-primary   { background:var(--amazon); color:var(--dark); box-shadow:0 6px 24px #ff990050; }
     .btn-secondary { background:var(--fresh); color:white; box-shadow:0 6px 24px #00a8a250; }
     .btn-ghost     { background:#ffffff15; color:var(--white); }
     .btn-danger    { background:var(--danger); color:white; }
-    .btn-sm { font-size:.9rem; padding:10px 18px; }
+    .btn-sm { font-size:.72rem; padding:10px 12px; min-height:40px; letter-spacing:.04em; }
+    .btn-inline { width:auto; max-width:none; margin:0; flex:0 0 auto; }
+    .btn-row { display:flex; gap:8px; flex-wrap:wrap; align-items:stretch; width:100%; }
+    .btn-row > .btn { flex:1 1 140px; max-width:none; margin:0; }
 
     .input-wrap { margin-bottom:12px; }
     .pixel-text { font-family:'Press Start 2P',monospace; letter-spacing:.12em; }
@@ -104,6 +116,7 @@
     .timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Fredoka One',cursive; font-size:1.7rem; }
 
     .stage { background:#0a1a20; border-radius:16px; padding:6px; margin-bottom:12px; box-shadow:inset 0 0 30px #00000080; overflow:hidden; }
+    .stage.hidden { display:none; }
     .stage svg { display:block; margin:auto; }
 
     .options-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; width:100%; max-width:440px; margin-bottom:12px; }
@@ -138,8 +151,14 @@
     .hint { text-align:center; font-size:.78rem; color:#555; margin-top:8px; }
 
     .admin-btn { position:fixed; top:14px; right:14px; z-index:200; background:#ffffff15; border:none; border-radius:50%; width:44px; height:44px; font-size:1.3rem; cursor:pointer; color:white; backdrop-filter:blur(10px); }
+    .screen-nav { width:min(440px,100%); display:flex; justify-content:flex-start; margin:0 auto 12px; }
+    .screen-nav .btn { margin:0; }
     .overlay { display:none; position:fixed; inset:0; z-index:300; background:#000c; backdrop-filter:blur(8px); flex-direction:column; align-items:center; padding:16px; overflow-y:auto; }
     .overlay.open { display:flex; }
+    .auth-gate { position:fixed; inset:0; z-index:450; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(1,7,12,.86); backdrop-filter:blur(12px); }
+    .auth-gate.hidden { display:none; }
+    .auth-shell { width:100%; max-width:520px; display:flex; flex-direction:column; align-items:center; }
+    .auth-copy { text-align:center; color:#b8ced8; font-size:.8rem; line-height:1.7; margin-bottom:12px; }
     .panel-header { display:flex; justify-content:space-between; align-items:center; width:100%; max-width:480px; margin-bottom:14px; margin-top:8px; }
     .panel-title { font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--amazon); }
     .close-x { background:#fff2; border:none; border-radius:50%; width:36px; height:36px; color:white; font-size:1.1rem; cursor:pointer; }
@@ -201,6 +220,27 @@
   <body>
 
   <div class="feedback" id="fb"></div>
+  <div class="auth-gate hidden" id="auth-gate">
+    <div class="auth-shell">
+      <img class="brand-logo brand-logo-sm" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
+      <div class="logo-title" style="font-size:clamp(1.2rem,5vw,2rem);">Acceso Del Equipo</div>
+      <div class="logo-sub">Primer ingreso por dispositivo</div>
+      <div class="card">
+        <p class="auth-copy">Cuando actives la autenticación fuerte, esta pantalla pedirá correo y contraseña una sola vez por dispositivo y Firebase recordará la sesión.</p>
+        <div class="input-wrap">
+          <label>Correo</label>
+          <input type="text" id="auth-email" placeholder="equipo@empresa.com" autocomplete="username">
+        </div>
+        <div class="input-wrap">
+          <label>Contraseña</label>
+          <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="auth-msg" class="msg" style="display:none;"></div>
+        <button class="btn btn-primary" onclick="submitAccessLogin()">Entrar</button>
+      </div>
+      <p class="hint" style="color:#9db6c4;max-width:460px;line-height:1.7;">La capa quedó preparada para replicarla en otros proyectos, pero aquí sigue apagada hasta que habilites Firebase Auth en la consola.</p>
+    </div>
+  </div>
 <button class="admin-btn" onclick="toggleAdmin()">⚙️</button>
 
 <!-- ===== ADMIN PANEL ===== -->
@@ -278,8 +318,8 @@
         <label>Nueva sala (código)</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <input type="text" id="new-room" placeholder="Ej. TURNO-A" maxlength="12" style="text-transform:uppercase;flex:1;">
-          <button class="btn btn-secondary btn-sm" style="margin:0;white-space:nowrap;max-width:100px;" onclick="addRoom()">+ Agregar</button>
-          <button class="btn btn-ghost btn-sm" style="margin:0;white-space:nowrap;max-width:100px;" onclick="generateRoomCode()">🎲 Generar</button>
+          <button class="btn btn-secondary btn-sm" style="margin:0;white-space:nowrap;" onclick="addRoom()">Agregar</button>
+          <button class="btn btn-ghost btn-sm" style="margin:0;white-space:nowrap;" onclick="generateRoomCode()">Generar</button>
         </div>
       </div>
       <div id="room-list"></div>
@@ -322,6 +362,12 @@
       </div>
       <div id="pin-change-msg"></div>
       <button class="btn btn-ghost btn-sm" onclick="changePin()">Guardar PIN</button>
+    </div>
+    <div class="card">
+      <div class="section-lbl">🛡 Seguridad</div>
+      <p id="auth-status-copy" style="font-size:.78rem;color:#aaa;line-height:1.7;">Protección fuerte preparada. Cuando habilites Firebase Auth, esta app podrá pedir acceso una sola vez por dispositivo.</p>
+      <div id="auth-status-msg" class="msg" style="display:none;"></div>
+      <button class="btn btn-ghost btn-sm" id="auth-logout-btn" onclick="logoutAccess()">Cerrar sesión de este dispositivo</button>
     </div>
   </div>
 
@@ -378,8 +424,8 @@
   <div class="card">
     <div class="section-lbl">Selecciona tu juego</div>
     <button class="btn btn-primary" style="margin-top:0;" onclick="chooseGame('actions')">Adivina la Acción</button>
-    <button class="btn btn-secondary" onclick="chooseGame('flags')">Demo Mundial de Banderas</button>
-    <p class="hint" style="margin-top:12px; color:#7fb5ce;">La demo de banderas es gratis y no necesita sala. El juego de acciones funciona en equipo con código de sala.</p>
+    <button class="btn btn-secondary" onclick="chooseGame('flags')">Mundial de Banderas</button>
+    <p class="hint" style="margin-top:12px; color:#7fb5ce;">Juego arcade individual con banderas reales del mundo. El juego de acciones sigue funcionando con código de sala.</p>
   </div>
   <div class="card">
     <div class="section-lbl">Ideas de mini juegos</div>
@@ -407,6 +453,12 @@
     <p class="hint" id="welcome-hint">Tu líder de sala te compartirá el código.</p>
   </div>
   <button class="btn btn-primary" id="play-button" onclick="startGame()">¡Jugar! 🎮</button>
+  <div class="card" id="welcome-flag-ranking-card" style="display:none;">
+    <div class="section-lbl">Top Mundial De Banderas</div>
+    <p style="font-size:.76rem;color:#9db6c4;line-height:1.7;margin-bottom:12px;">Mira el ranking antes de empezar tu ronda.</p>
+    <div id="welcome-flag-leaderboard"></div>
+  </div>
+  <button class="btn btn-ghost" onclick="goToSelector()">Cambiar juego</button>
   <p class="hint" style="margin-top:12px;">Admin: toca ⚙️ para configurar</p>
 </div>
 
@@ -419,12 +471,18 @@
     <p style="margin-bottom:12px;">Jugador: <strong id="lobby-name"></strong></p>
     <div id="lobby-players" class="lb-empty">Esperando jugadores...</div>
     <p class="hint" style="margin-top:12px;">La partida arrancará cuando control de sala lance la primera pregunta.</p>
-    <button class="btn btn-ghost" style="margin-top:14px;" onclick="restart()">Salir de la sala</button>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="restart()">Salir de la sala</button>
+      <button class="btn btn-secondary" onclick="goToSelector()">Cambiar juego</button>
+    </div>
   </div>
 </div>
 
 <!-- ===== GAME ===== -->
 <div class="screen" id="s-game">
+  <div class="screen-nav">
+    <button class="btn btn-ghost btn-sm btn-inline" onclick="goToSelector()">← Juegos</button>
+  </div>
   <div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
     <div>
       <div class="score-badge">🌟 <span id="score-disp">0</span> pts</div>
@@ -442,7 +500,7 @@
     <div class="progress-wrap"><div class="progress-bar" id="prog" style="width:0%"></div></div>
     <div class="q-counter" id="q-cnt"></div>
   </div>
-  <div class="stage" style="width:100%;max-width:440px;">
+  <div class="stage" id="game-stage" style="width:100%;max-width:440px;">
     <svg id="sm-svg" width="100%" viewBox="0 0 220 200" style="max-height:165px;"></svg>
   </div>
   <div id="q-flag" class="flag-panel hidden"></div>
@@ -469,7 +527,7 @@
     <div class="section-lbl">Top jugadores</div>
     <div id="arcade-leaderboard"></div>
   </div>
-  <button class="btn btn-primary" style="margin-top:14px;" onclick="showScreen('s-splash')">Volver al menú</button>
+  <button class="btn btn-primary" style="margin-top:14px;" onclick="goToSelector()">Volver al menú</button>
 </div>
 
 <!-- ===== RESULT ===== -->
@@ -487,7 +545,49 @@
     <p style="font-weight:900;color:var(--fresh);font-size:1.05rem;">🛣️ Has cerrado tu ruta</p>
     <p style="color:#aaa;font-size:.8rem;margin-top:4px;">Compara tu puntaje con la sala y vuelve a intentarlo si quieres mejorar.</p>
   </div>
-  <button class="btn btn-secondary" style="margin-top:14px;" onclick="restart()">Jugar de nuevo 🔄</button>
+  <div class="btn-row" style="width:100%;max-width:440px;margin-top:14px;">
+    <button class="btn btn-secondary" onclick="restart()">Jugar de nuevo 🔄</button>
+    <button class="btn btn-ghost" onclick="goToSelector()">Cambiar juego</button>
+  </div>
+</div>
+
+<div class="screen" id="s-presenter">
+  <img class="brand-logo brand-logo-sm" src="USV1 LOGO 2.0.png?v=20260513" alt="USV1 GSF">
+  <div class="logo-title">Pantalla De Sala</div>
+  <div class="logo-sub" id="presenter-subtitle">Esperando acceso</div>
+  <div class="presenter-shell">
+    <div class="card presenter-card presenter-section">
+      <div class="section-lbl">Sala activa</div>
+      <div class="room-code-display" id="presenter-room-code">----</div>
+      <p style="font-size:.8rem;color:#9db6c4;line-height:1.7;">Código: <strong id="presenter-room" style="color:var(--accent);"></strong></p>
+      <p id="presenter-status-text" style="font-size:.8rem;color:#c9d7dd;line-height:1.8;margin-top:10px;">Control de sala todavía no abrió el acceso de esta sala.</p>
+      <div id="presenter-control-bar" class="btn-row presenter-hidden" style="margin-top:14px;">
+        <button class="btn btn-secondary btn-sm" id="presenter-open-btn" onclick="openPresenterAccess()">Abrir acceso</button>
+        <button class="btn btn-primary btn-sm" id="presenter-start-btn" onclick="startPresenterSessionControl()">Iniciar partida</button>
+        <button class="btn btn-ghost btn-sm" id="presenter-show-answer-btn" onclick="showPresenterAnswer()">Mostrar respuesta</button>
+        <button class="btn btn-primary btn-sm" id="presenter-next-btn" onclick="presenterNextQuestion()">Siguiente</button>
+      </div>
+      <div class="msg" id="presenter-control-msg" style="margin-top:12px;display:none;"></div>
+      <div id="presenter-qr-wrap" style="margin-top:14px;">
+        <div class="qr-shell" style="max-width:340px;margin:0 auto;">
+          <div id="presenter-qr"></div>
+          <p class="hint" style="color:#0f2027;margin:0;">Escanea el QR o entra con el código de sala.</p>
+        </div>
+      </div>
+      <div id="presenter-question-wrap" class="presenter-hidden" style="margin-top:14px;">
+        <div class="score-badge" style="margin-bottom:12px;"><span id="presenter-q-count">Pregunta 0 de 0</span></div>
+        <div class="q-label" id="presenter-q" style="min-height:72px;"></div>
+        <div id="presenter-options" class="options-grid" style="margin:14px auto 0;"></div>
+        <div id="presenter-answer" class="presenter-answer">Respuesta correcta:</div>
+      </div>
+    </div>
+    <div class="card presenter-section presenter-live-list">
+      <div class="section-lbl">Sala en vivo</div>
+      <div id="presenter-live-summary" class="arb-live-summary"></div>
+      <div id="presenter-live-players" class="lb-empty" style="margin-top:12px;">Esperando jugadores...</div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" style="margin-top:18px;" onclick="exitPresenter()">Cerrar pantalla</button>
 </div>
 
 <script>
@@ -569,18 +669,18 @@ async function saveRoomScores(room,s){
   save('af_scores_'+room,s);
 }
 
+let arcadeRankingCache = load('flag_arcade_ranking',[]);
+
 function getArcadeRanking(){
-  return load('flag_arcade_ranking',[]);
+  return Array.isArray(arcadeRankingCache) ? arcadeRankingCache : [];
 }
 function saveArcadeRanking(list){
-  save('flag_arcade_ranking',list);
+  arcadeRankingCache = Array.isArray(list) ? [...list] : [];
+  save('flag_arcade_ranking', arcadeRankingCache);
 }
-function renderArcadeLeaderboard(list){
-  const board = list || getArcadeRanking();
-  const el = document.getElementById('arcade-leaderboard');
-  if(!el) return;
-  if(!board.length){ el.innerHTML = '<div class="lb-empty">Aún no hay puntajes en el ranking.</div>'; return; }
-  el.innerHTML = board.map((item,i)=>`
+function buildArcadeLeaderboardMarkup(board, limit=board.length, emptyText='Aún no hay puntajes en el ranking.'){
+  if(!board.length) return `<div class="lb-empty">${emptyText}</div>`;
+  return board.slice(0, Math.max(0, limit)).map((item,i)=>`
     <div class="lb-row" style="animation-delay:${i*20}ms">
       <div class="lb-rank ${i<3?'lb-rank-'+(i+1):'lb-rank-n'}">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div>
       <div class="lb-info">
@@ -589,6 +689,18 @@ function renderArcadeLeaderboard(list){
       </div>
       <div class="lb-score">${item.score} pts</div>
     </div>`).join('');
+}
+function renderArcadeLeaderboard(list){
+  const board = list || getArcadeRanking();
+  const el = document.getElementById('arcade-leaderboard');
+  if(!el) return;
+  el.innerHTML = buildArcadeLeaderboardMarkup(board);
+}
+function renderWelcomeFlagLeaderboard(list){
+  const board = list || getArcadeRanking();
+  const el = document.getElementById('welcome-flag-leaderboard');
+  if(!el) return;
+  el.innerHTML = buildArcadeLeaderboardMarkup(board, 5, 'Todavía no hay ranking guardado. Tu partida puede abrir el top.');
 }
 function getIdeaBucket(){
   return load('mini_game_ideas',[]);
@@ -644,39 +756,80 @@ async function initIdeaBucketSync(){
     });
   } catch(e){ console.warn('Firebase initIdeaBucketSync error',e); }
 }
-function renderFlagGraphic(code){
-  const svg = {
-    BR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#009b3a"/><polygon points="30,6 52,20 30,34 8,20" fill="#ffdf00"/><circle cx="30" cy="20" r="9" fill="#002776"/><circle cx="30" cy="20" r="3.2" fill="#fff"/></svg>',
-    AR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#74acdf"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#74acdf"/><circle cx="30" cy="20" r="6" fill="#ffd700"/><g fill="#ffd700"><path d="M30 10 L32 18 L30 16 L28 18 Z"/><path d="M30 30 L32 22 L30 24 L28 22 Z"/><path d="M10 20 L18 20 L14 18 Z"/><path d="M50 20 L42 20 L46 18 Z"/></g></svg>',
-    FR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#0055a4"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ef4135"/></svg>',
-    ES: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#c60b1e"/><rect y="8" width="60" height="8" fill="#ffc400"/><rect y="24" width="60" height="8" fill="#ffc400"/></svg>',
-    JP: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="9" fill="#bc002d"/></svg>',
-    MX: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#006847"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce1126"/><path d="M30 12 L33 18 L29 18 Z M28 20 L32 20 L31 26 L29 26 Z" fill="#007a3d"/></svg>',
-    DE: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="13.33" fill="#000"/><rect y="13.33" width="60" height="13.34" fill="#dd0000"/><rect y="26.67" width="60" height="13.33" fill="#ffce00"/></svg>',
-    AU: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#00247d"/><path d="M0 0 L20 0 L60 40 L40 40 Z" fill="#fff"/><path d="M60 0 L40 0 L0 40 L20 40 Z" fill="#fff"/><path d="M0 0 L10 0 L60 35 L50 35 Z" fill="#cc142b"/><path d="M60 0 L50 0 L0 35 L10 35 Z" fill="#cc142b"/><path d="M28 10 L32 10 L30 16 Z M28 24 L32 24 L30 30 Z M20 20 L24 20 L22 24 Z M36 20 L40 20 L38 24 Z" fill="#fff"/></svg>',
-    CA: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="12" height="40" fill="#d52b1e"/><rect x="48" width="12" height="40" fill="#d52b1e"/><rect x="12" width="36" height="40" fill="#fff"/><polygon points="30,6 34,16 42,16 35,22 38,33 30,26 22,33 25,22 18,16 26,16" fill="#d52b1e"/></svg>',
-    IT: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce2b37"/></svg>'
-  };
-  const markup = svg[code] || '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#444"/><text x="30" y="25" font-family="Arial,monospace" font-size="14" fill="#fff" text-anchor="middle">'+code+'</text></svg>';
-  return `<img src="data:image/svg+xml;utf8,${encodeURIComponent(markup)}" alt="${code}"/>`;
+function normalizeFlagCatalog(data){
+  const seen = new Set();
+  const catalog = [];
+  (data || []).forEach(country=>{
+    const code = String(country?.cca2 || country?.code || '').trim().toUpperCase();
+    const name = String(country?.translations?.spa?.common || country?.name?.common || country?.name || '').trim();
+    if(code.length!==2 || !name || seen.has(code)) return;
+    seen.add(code);
+    catalog.push({code,name});
+  });
+  return catalog.sort((left,right)=>left.name.localeCompare(right.name,'es'));
 }
-function saveArcadeRanking(list){
-  save('flag_arcade_ranking',list);
+async function loadFlagCatalog(){
+  if(Array.isArray(flagCatalogCache) && flagCatalogCache.length>=180) return flagCatalogCache;
+  if(flagCatalogPromise) return flagCatalogPromise;
+  flagCatalogPromise = (async()=>{
+    try{
+      const response = await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,translations', { cache:'force-cache' });
+      if(!response.ok) throw new Error(`Catalogo HTTP ${response.status}`);
+      const data = await response.json();
+      const catalog = normalizeFlagCatalog(data);
+      if(catalog.length<180) throw new Error('Catalogo mundial insuficiente');
+      flagCatalogCache = catalog;
+      save('flag_catalog_cache', catalog);
+      return catalog;
+    } catch(error){
+      console.warn('No se pudo cargar el catalogo mundial de banderas:', error);
+      const cached = normalizeFlagCatalog(load('flag_catalog_cache', FLAG_CATALOG_FALLBACK));
+      flagCatalogCache = cached.length ? cached : FLAG_CATALOG_FALLBACK;
+      return flagCatalogCache;
+    } finally {
+      flagCatalogPromise = null;
+    }
+  })();
+  return flagCatalogPromise;
 }
-function renderArcadeLeaderboard(list){
-  const board = list || getArcadeRanking();
-  const el = document.getElementById('arcade-leaderboard');
-  if(!el) return;
-  if(!board.length){ el.innerHTML = '<div class="lb-empty">Aún no hay puntajes en el ranking.</div>'; return; }
-  el.innerHTML = board.map((item,i)=>`
-    <div class="lb-row" style="animation-delay:${i*20}ms">
-      <div class="lb-rank ${i<3?'lb-rank-'+(i+1):'lb-rank-n'}">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div>
-      <div class="lb-info">
-        <div class="lb-name">${item.initials}</div>
-        <div class="lb-meta">${item.time}</div>
-      </div>
-      <div class="lb-score">${item.score} pts</div>
-    </div>`).join('');
+function buildFlagImageUrl(code){
+  return `https://flagcdn.com/w640/${String(code).toLowerCase()}.png`;
+}
+function buildFlagOptions(correctCountry,catalog){
+  const options = [correctCountry.name];
+  shuffle(catalog).forEach(country=>{
+    if(country.code===correctCountry.code) return;
+    if(options.includes(country.name)) return;
+    if(options.length>=4) return;
+    options.push(country.name);
+  });
+  return shuffle(options);
+}
+function buildFlagDeck(catalog,count=FLAG_GAME_QUESTION_COUNT){
+  return shuffle(catalog)
+    .slice(0, Math.min(count, catalog.length))
+    .map(country=>({
+      name:country.name,
+      label:'¿De qué país es esta bandera?',
+      code:country.code,
+      imageUrl:buildFlagImageUrl(country.code),
+      options:buildFlagOptions(country,catalog),
+      answer:country.name
+    }));
+}
+function renderFlagGraphic(container,question){
+  if(!container || !question) return;
+  container.innerHTML='';
+  const image=document.createElement('img');
+  image.src=question.imageUrl || buildFlagImageUrl(question.code);
+  image.alt=`Bandera de ${question.name || question.answer || question.code}`;
+  image.loading='eager';
+  image.decoding='sync';
+  image.referrerPolicy='no-referrer';
+  image.addEventListener('error',()=>{
+    container.innerHTML=`<div class="flag-fallback">${question.code || 'FLAG'}</div>`;
+  }, { once:true });
+  container.appendChild(image);
 }
 function submitArcadeScore(){
   const initialsEl = document.getElementById('arcade-initials');
@@ -703,7 +856,9 @@ async function saveFlagScore(initials){
       const payload = {};
       board.forEach((item,i)=>payload[i]=item);
       await ref.set(payload);
+      saveArcadeRanking(board);
       renderArcadeLeaderboard(board);
+      renderWelcomeFlagLeaderboard(board);
       document.getElementById('arcade-msg').innerHTML = '<div class="msg ok">✅ ¡Listo! Tu puntaje quedó en el ranking global.</div>';
       document.getElementById('arcade-initials').disabled = true;
       return;
@@ -717,6 +872,7 @@ async function saveFlagScore(initials){
   document.getElementById('arcade-msg').innerHTML = '<div class="msg ok">✅ ¡Listo! Tu puntaje quedó en el ranking.</div>';
   document.getElementById('arcade-initials').disabled = true;
   renderArcadeLeaderboard(board);
+  renderWelcomeFlagLeaderboard(board);
 }
 async function initFlagRankingSync(){
   if(!fbAvailable) return;
@@ -725,7 +881,9 @@ async function initFlagRankingSync(){
     ref.on('value', snap=>{
       const data = snap.val();
       const board = data ? Object.values(data) : [];
+      saveArcadeRanking(board);
       renderArcadeLeaderboard(board);
+      renderWelcomeFlagLeaderboard(board);
     });
   } catch(e){ console.warn('Firebase initFlagRankingSync error',e); }
 }
@@ -862,7 +1020,10 @@ function openPresenter(room){
   url.hash='';
   url.searchParams.set('room',room);
   url.searchParams.set('mode','host');
-  window.open(url.toString(),'presenter');
+  const presenterWindow = window.open(url.toString(),'presenter');
+  if(!presenterWindow){
+    window.location.href = url.toString();
+  }
 }
 
 function serializeDeck(deck){
@@ -954,21 +1115,31 @@ function unbindArbiterSession(){
   arbiterSessionRoom='';
 }
 
+function syncArbiterControlState(control){
+  const remoteDeck = deserializeDeck(control?.deck);
+  if(!remoteDeck.length){
+    if(!control) return false;
+    adminDeck=[];
+    adminIndex=0;
+    arbiterActive=false;
+    arbiterAnswerVisible=!!control?.answerVisible;
+    renderArbiterPanel();
+    return false;
+  }
+  adminDeck = remoteDeck;
+  adminIndex = Math.min(Math.max(Number(control?.index)||0, 0), remoteDeck.length-1);
+  arbiterActive = true;
+  arbiterAnswerVisible = !!control?.answerVisible;
+  renderArbiterPanel();
+  return true;
+}
+
 function renderArbiterSession(room,session){
   const players = sortLivePlayers(session?.players);
   const totalQuestions = Number(session?.control?.total) || adminDeck.length || getGameSettings().questionCount;
   document.getElementById('arb-live-summary').innerHTML = buildLiveSummaryMarkup(players,session);
   document.getElementById('arb-live-players').innerHTML = buildLivePlayersMarkup(players,totalQuestions,'Todavía no hay jugadores dentro de esta sala.');
-  if(session?.control){
-    const remoteDeck = deserializeDeck(session.control.deck);
-    if(remoteDeck.length){
-      adminDeck = remoteDeck;
-      adminIndex = Math.min(Number(session.control.index)||0, remoteDeck.length-1);
-      arbiterActive = true;
-      arbiterAnswerVisible = !!session.control.answerVisible;
-      renderArbiterPanel();
-    }
-  }
+  if(session?.control) syncArbiterControlState(session.control);
 }
 
 function handleArbiterRoomChange(force=false){
@@ -1029,6 +1200,12 @@ function renderPresenterSession(room,session){
   const qrWrap=document.getElementById('presenter-qr-wrap');
   const questionWrap=document.getElementById('presenter-question-wrap');
   const answer=document.getElementById('presenter-answer');
+  const controlBar=document.getElementById('presenter-control-bar');
+  const openBtn=document.getElementById('presenter-open-btn');
+  const startBtn=document.getElementById('presenter-start-btn');
+  const showAnswerBtn=document.getElementById('presenter-show-answer-btn');
+  const nextBtn=document.getElementById('presenter-next-btn');
+  if(session?.control) syncArbiterControlState(session.control);
   document.getElementById('presenter-room').textContent = room || '-';
   document.getElementById('presenter-room-code').textContent = room || '----';
   document.getElementById('presenter-live-summary').innerHTML = buildLiveSummaryMarkup(players,session);
@@ -1038,6 +1215,11 @@ function renderPresenterSession(room,session){
   if(!session?.openedAt){
     document.getElementById('presenter-subtitle').textContent='Esperando acceso';
     document.getElementById('presenter-status-text').textContent='Control de sala todavía no abrió el acceso de esta sala.';
+    controlBar.classList.remove('presenter-hidden');
+    openBtn.style.display='';
+    startBtn.style.display='none';
+    showAnswerBtn.style.display='none';
+    nextBtn.style.display='none';
     qrWrap.classList.remove('presenter-hidden');
     questionWrap.classList.add('presenter-hidden');
     return;
@@ -1045,6 +1227,7 @@ function renderPresenterSession(room,session){
   if(session.state==='results'){
     document.getElementById('presenter-subtitle').textContent='Resultados en vivo';
     document.getElementById('presenter-status-text').textContent='La partida terminó. Usa esta pantalla para mostrar los resultados.';
+    controlBar.classList.add('presenter-hidden');
     qrWrap.classList.add('presenter-hidden');
     questionWrap.classList.add('presenter-hidden');
     return;
@@ -1052,12 +1235,22 @@ function renderPresenterSession(room,session){
   if(!session.started || !questionDeck.length){
     document.getElementById('presenter-subtitle').textContent='Acceso en pantalla';
     document.getElementById('presenter-status-text').textContent='Escanea el QR o usa el código para entrar a la sala.';
+    controlBar.classList.remove('presenter-hidden');
+    openBtn.style.display='none';
+    startBtn.style.display='';
+    showAnswerBtn.style.display='none';
+    nextBtn.style.display='none';
     qrWrap.classList.remove('presenter-hidden');
     questionWrap.classList.add('presenter-hidden');
     return;
   }
   document.getElementById('presenter-subtitle').textContent='Partida en curso';
   document.getElementById('presenter-status-text').textContent='Control de sala decide cuándo mostrar respuesta y pasar a la siguiente pregunta.';
+  controlBar.classList.remove('presenter-hidden');
+  openBtn.style.display='none';
+  startBtn.style.display='none';
+  showAnswerBtn.style.display='';
+  nextBtn.style.display='';
   qrWrap.classList.add('presenter-hidden');
   questionWrap.classList.remove('presenter-hidden');
   document.getElementById('presenter-q-count').textContent = `Pregunta ${questionIndex+1} de ${questionDeck.length}`;
@@ -1181,6 +1374,42 @@ function getSelectedRoom(){
   return sel ? sel.value.trim().toUpperCase() : '';
 }
 
+function setSelectedRoom(room){
+  const sel = document.getElementById('arb-room-select');
+  if(!sel || !room) return;
+  sel.value = room;
+}
+
+function setStatusMessage(targetId, text, type){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  el.textContent = text;
+  el.className = `msg ${type}`;
+  el.style.display = 'block';
+}
+
+function clearStatusMessage(targetId){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  el.style.display = 'none';
+}
+
+function getControlRoom(room=''){
+  return String(room || presenterSessionRoom || presenterRoom || getSelectedRoom()).trim().toUpperCase();
+}
+
+async function ensureArbiterControlStateForRoom(room){
+  if(!room) return false;
+  if(!fbAvailable) return !!adminDeck.length;
+  try{
+    const snapshot = await firebaseDB.ref(`sessions/${encodeURIComponent(room)}/control`).once('value');
+    return syncArbiterControlState(snapshot.val());
+  } catch(e){
+    console.warn('Firebase ensureArbiterControlState error',e);
+    return !!adminDeck.length;
+  }
+}
+
 function renderRoomSelect(){
   const rooms = getRooms();
   const sel = document.getElementById('arb-room-select');
@@ -1281,8 +1510,7 @@ async function syncPlayerSession(session){
   }
 }
 
-async function activateSession(){
-  const room = getSelectedRoom();
+async function activateSessionForRoom(room, targetId='arb-session-msg'){
   if(!room){ alert('Selecciona una sala en Control.'); return; }
   if(!fbAvailable){ alert('Firebase no disponible.'); return; }
   const rooms = getRooms();
@@ -1290,7 +1518,7 @@ async function activateSession(){
     rooms.push(room);
     await saveRooms(rooms);
   }
-  const msg=document.getElementById('arb-session-msg');
+  setSelectedRoom(room);
   try{
     await firebaseDB.ref(`sessions/${encodeURIComponent(room)}`).set({started:false,state:'lobby',openedAt:Date.now()});
     adminDeck=[];
@@ -1299,35 +1527,60 @@ async function activateSession(){
     arbiterAnswerVisible=false;
     renderArbiterPanel();
     handleArbiterRoomChange(true);
-    msg.textContent = `Acceso abierto para ${room}. El equipo ya puede entrar con el código o el QR.`;
-    msg.className='msg ok';
+    setStatusMessage(targetId, `Acceso abierto para ${room}. El equipo ya puede entrar con el código o el QR.`, 'ok');
+    return true;
   } catch(e){
     console.warn('Firebase activateSession error',e);
-    msg.textContent = `No se pudo abrir el acceso de ${room}. Revisa la conexion o las reglas de Firebase.`;
-    msg.className='msg err';
+    setStatusMessage(targetId, `No se pudo abrir el acceso de ${room}. Revisa la conexion o las reglas de Firebase.`, 'err');
+    return false;
   }
-  msg.style.display='block';
 }
 
-async function beginSession(){
-  const room = getSelectedRoom();
+async function activateSession(){
+  return activateSessionForRoom(getControlRoom(), 'arb-session-msg');
+}
+
+async function beginSessionForRoom(room, targetId='arb-session-msg'){
   if(!room){ alert('Selecciona una sala en Control.'); return; }
   if(!fbAvailable){ alert('Firebase no disponible.'); return; }
-  const msg=document.getElementById('arb-session-msg');
+  setSelectedRoom(room);
   try{
     if(!arbiterActive || !adminDeck.length){
-      const ready = await startArbiter();
+      const ready = await startArbiter(room);
       if(!ready) return;
     }
     await firebaseDB.ref(`sessions/${encodeURIComponent(room)}`).update({started:true,state:'live',updatedAt:Date.now()});
-    msg.textContent = `Partida lanzada en ${room}. Todo el equipo ya quedó sincronizado.`;
-    msg.className='msg ok';
+    setStatusMessage(targetId, `Partida lanzada en ${room}. Todo el equipo ya quedó sincronizado.`, 'ok');
+    return true;
   } catch(e){
     console.warn('Firebase beginSession error',e);
-    msg.textContent = `No se pudo iniciar la partida en ${room}. Revisa la conexion o las reglas de Firebase.`;
-    msg.className='msg err';
+    setStatusMessage(targetId, `No se pudo iniciar la partida en ${room}. Revisa la conexion o las reglas de Firebase.`, 'err');
+    return false;
   }
-  msg.style.display='block';
+}
+
+async function beginSession(){
+  return beginSessionForRoom(getControlRoom(), 'arb-session-msg');
+}
+
+async function openPresenterAccess(){
+  clearStatusMessage('presenter-control-msg');
+  return activateSessionForRoom(getControlRoom(), 'presenter-control-msg');
+}
+
+async function startPresenterSessionControl(){
+  clearStatusMessage('presenter-control-msg');
+  return beginSessionForRoom(getControlRoom(), 'presenter-control-msg');
+}
+
+async function showPresenterAnswer(){
+  clearStatusMessage('presenter-control-msg');
+  return adminShowAnswerForRoom(getControlRoom(), 'presenter-control-msg');
+}
+
+async function presenterNextQuestion(){
+  clearStatusMessage('presenter-control-msg');
+  return adminNextQuestionForRoom(getControlRoom(), 'presenter-control-msg');
 }
 
 function initFirebaseSync(){
@@ -1392,18 +1645,35 @@ let QUESTIONS = getQuestions() || [
   {name:"Celebrar meta",  label:"¿Qué hace el asociado?",  anim:"celebrate", options:["Celebrar meta","Reportar","Limpiar","Stretching"],answer:"Celebrar meta"}
 ];
 
-const FLAG_QUESTIONS = [
-  {name:"Brasil", label:"¿De qué país es esta bandera?", code:"BR", options:["Brasil","Argentina","México","España"], answer:"Brasil"},
-  {name:"Argentina", label:"¿De qué país es esta bandera?", code:"AR", options:["Argentina","Francia","Chile","Portugal"], answer:"Argentina"},
-  {name:"Francia", label:"¿De qué país es esta bandera?", code:"FR", options:["Francia","Italia","Países Bajos","Rumania"], answer:"Francia"},
-  {name:"España", label:"¿De qué país es esta bandera?", code:"ES", options:["España","Colombia","Perú","México"], answer:"España"},
-  {name:"Japón", label:"¿De qué país es esta bandera?", code:"JP", options:["Japón","Corea del Sur","China","Tailandia"], answer:"Japón"},
-  {name:"México", label:"¿De qué país es esta bandera?", code:"MX", options:["México","Brasil","Argentina","Estados Unidos"], answer:"México"},
-  {name:"Alemania", label:"¿De qué país es esta bandera?", code:"DE", options:["Alemania","Bélgica","Austria","Países Bajos"], answer:"Alemania"},
-  {name:"Australia", label:"¿De qué país es esta bandera?", code:"AU", options:["Australia","Nueva Zelanda","Reino Unido","Canadá"], answer:"Australia"},
-  {name:"Canadá", label:"¿De qué país es esta bandera?", code:"CA", options:["Canadá","Estados Unidos","Reino Unido","Japón"], answer:"Canadá"},
-  {name:"Italia", label:"¿De qué país es esta bandera?", code:"IT", options:["Italia","México","Francia","Grecia"], answer:"Italia"}
+const FLAG_GAME_QUESTION_COUNT = 10;
+const FLAG_CATALOG_FALLBACK = [
+  {code:"AR", name:"Argentina"},
+  {code:"AU", name:"Australia"},
+  {code:"BR", name:"Brasil"},
+  {code:"CA", name:"Canadá"},
+  {code:"CL", name:"Chile"},
+  {code:"CO", name:"Colombia"},
+  {code:"DE", name:"Alemania"},
+  {code:"ES", name:"España"},
+  {code:"FR", name:"Francia"},
+  {code:"GB", name:"Reino Unido"},
+  {code:"GR", name:"Grecia"},
+  {code:"IN", name:"India"},
+  {code:"IT", name:"Italia"},
+  {code:"JP", name:"Japón"},
+  {code:"KR", name:"Corea del Sur"},
+  {code:"MA", name:"Marruecos"},
+  {code:"MX", name:"México"},
+  {code:"NL", name:"Países Bajos"},
+  {code:"PE", name:"Perú"},
+  {code:"PT", name:"Portugal"},
+  {code:"RO", name:"Rumania"},
+  {code:"TH", name:"Tailandia"},
+  {code:"US", name:"Estados Unidos"},
+  {code:"ZA", name:"Sudáfrica"}
 ];
+let flagCatalogCache = load('flag_catalog_cache', FLAG_CATALOG_FALLBACK);
+let flagCatalogPromise = null;
 
 // ============================================================
 //  ADMIN
@@ -1560,10 +1830,10 @@ function saveSettings(){
   setTimeout(()=>{msg.innerHTML='';},2200);
 }
 
-async function startArbiter(){
-  const room = getSelectedRoom();
+async function startArbiter(room=getControlRoom()){
   if(!room){ alert('Selecciona una sala en Control.'); return false; }
   if(!QUESTIONS.length){ alert('Agrega acciones primero en el panel de Acciones.'); return false; }
+  setSelectedRoom(room);
   const settings=getGameSettings();
   arbiterActive=true;
   adminDeck=shuffle(QUESTIONS).slice(0,Math.min(settings.questionCount,QUESTIONS.length));
@@ -1571,7 +1841,7 @@ async function startArbiter(){
   arbiterAnswerVisible=false;
   await publishArbiterControl(room);
   renderArbiterPanel();
-  document.getElementById('arb-msg').style.display='none';
+  clearStatusMessage('arb-msg');
   return true;
 }
 
@@ -1586,40 +1856,51 @@ function renderArbiterPanel(){
   document.getElementById('arb-answer').style.background=question?(arbiterAnswerVisible?'#06d6a088':'#ffffff12'):'#ffffff10';
 }
 
-async function adminNextQuestion(){
-  const room = getSelectedRoom();
-  if(!arbiterActive){ await startArbiter(); return; }
+async function adminNextQuestionForRoom(room, targetId='arb-msg'){
+  if(!room){ alert('Selecciona una sala en Control.'); return false; }
+  setSelectedRoom(room);
+  const synced = await ensureArbiterControlStateForRoom(room);
+  if(!synced && !arbiterActive){
+    const ready = await startArbiter(room);
+    if(!ready) return false;
+  }
   if(adminIndex+1>=adminDeck.length){
-    document.getElementById('arb-msg').textContent='✅ Ruta cerrada. Ya puedes revisar resultados o volver al inicio.';
-    document.getElementById('arb-msg').className='msg ok';
-    document.getElementById('arb-msg').style.display='block';
+    setStatusMessage(targetId,'✅ Ruta cerrada. Ya puedes revisar resultados o volver al inicio.','ok');
     if(fbAvailable && room){
       try{ await firebaseDB.ref(`sessions/${encodeURIComponent(room)}`).update({state:'results',updatedAt:Date.now()}); }
       catch(e){ console.warn('Firebase adminNextQuestion end error',e); }
     }
-    return;
+    return true;
   }
   adminIndex++;
   arbiterAnswerVisible=false;
   await publishArbiterControl(room);
   renderArbiterPanel();
-  document.getElementById('arb-msg').style.display='none';
+  clearStatusMessage(targetId);
+  return true;
 }
 
-async function adminShowAnswer(){
-  const room = getSelectedRoom();
-  if(!arbiterActive||!adminDeck.length){
-    document.getElementById('arb-msg').textContent='⚠️ Prepara primero la ronda para mostrar respuestas.';
-    document.getElementById('arb-msg').className='msg err';
-    document.getElementById('arb-msg').style.display='block';
-    return;
+async function adminNextQuestion(){
+  return adminNextQuestionForRoom(getControlRoom(), 'arb-msg');
+}
+
+async function adminShowAnswerForRoom(room, targetId='arb-msg'){
+  if(!room){ alert('Selecciona una sala en Control.'); return false; }
+  setSelectedRoom(room);
+  const synced = await ensureArbiterControlStateForRoom(room);
+  if((!synced && !arbiterActive) || !adminDeck.length){
+    setStatusMessage(targetId,'⚠️ Prepara primero la ronda para mostrar respuestas.','err');
+    return false;
   }
   arbiterAnswerVisible=true;
   await publishArbiterControl(room);
   renderArbiterPanel();
-  document.getElementById('arb-msg').textContent='✅ Respuesta visible en la pantalla.';
-  document.getElementById('arb-msg').className='msg ok';
-  document.getElementById('arb-msg').style.display='block';
+  setStatusMessage(targetId,'✅ Respuesta visible en la pantalla.','ok');
+  return true;
+}
+
+async function adminShowAnswer(){
+  return adminShowAnswerForRoom(getControlRoom(), 'arb-msg');
 }
 
 function addRoom(){
@@ -1716,14 +1997,186 @@ async function clearRoomScores(){
 // ============================================================
 let selectedGame='actions';
 let pName='', pRoom='', score=0, qIdx=-1, timerInt=null, tLeft=15, currentGameLimit=15, answered=false, deck=[];
-const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+let authUser=null, appServicesStarted=false, initialRouteStarted=false;
+function shuffle(list){
+  const copy = [...list];
+  for(let index=copy.length-1; index>0; index--){
+    const swapIndex = Math.floor(Math.random()*(index+1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
+}
 const showScreen=id=>{ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+
+function setInlineMessage(id,message='',kind=''){
+  const el=document.getElementById(id);
+  if(!el) return;
+  if(!message){
+    el.style.display='none';
+    el.textContent='';
+    el.className='msg';
+    return;
+  }
+  el.style.display='block';
+  el.className=`msg ${kind}`.trim();
+  el.textContent=message;
+}
+
+function isAllowedAccessUser(user){
+  if(!user) return false;
+  const email = String(user.email || '').trim().toLowerCase();
+  if(!AUTH_ALLOWED_EMAILS.length && !AUTH_ALLOWED_DOMAINS.length) return true;
+  if(email && AUTH_ALLOWED_EMAILS.map(item=>String(item).toLowerCase()).includes(email)) return true;
+  return AUTH_ALLOWED_DOMAINS.some(domain=>email.endsWith(`@${String(domain).toLowerCase()}`));
+}
+
+function renderSecurityState(){
+  const copy=document.getElementById('auth-status-copy');
+  const logoutBtn=document.getElementById('auth-logout-btn');
+  if(!copy || !logoutBtn) return;
+  if(!AUTH_REQUIRED){
+    copy.textContent='Protección fuerte preparada. Cuando habilites Firebase Auth, esta app podrá pedir acceso una sola vez por dispositivo.';
+    logoutBtn.disabled=true;
+    return;
+  }
+  logoutBtn.disabled=!firebaseAuth;
+  if(authUser){
+    copy.textContent=`Acceso activo en este dispositivo: ${authUser.email || 'cuenta del equipo'}.`;
+    return;
+  }
+  copy.textContent='Este dispositivo aún no tiene una sesión autenticada.';
+}
+
+function openAuthGate(message='',kind=''){
+  const gate=document.getElementById('auth-gate');
+  if(gate) gate.classList.remove('hidden');
+  setInlineMessage('auth-msg', message, kind);
+}
+
+function closeAuthGate(){
+  const gate=document.getElementById('auth-gate');
+  if(gate) gate.classList.add('hidden');
+  setInlineMessage('auth-msg');
+}
+
+function startInitialRoute(){
+  if(initialRouteStarted) return;
+  initialRouteStarted=true;
+  if(getQueryParam('mode')==='host') startPresenter();
+}
+
+function startProtectedServices(){
+  if(appServicesStarted) return;
+  appServicesStarted=true;
+  initFirebaseSync();
+  initFlagRankingSync();
+  initIdeaBucketSync();
+  startInitialRoute();
+}
+
+function bootstrapAccess(){
+  renderSecurityState();
+  if(!AUTH_REQUIRED){
+    closeAuthGate();
+    startProtectedServices();
+    return;
+  }
+  if(!firebaseAuth){
+    openAuthGate('Activa Firebase Auth en este proyecto antes de encender AUTH_REQUIRED.', 'err');
+    renderSecurityState();
+    return;
+  }
+  openAuthGate('Inicia sesión con la cuenta del equipo para entrar.', 'ok');
+  firebaseAuth.onAuthStateChanged(async user=>{
+    authUser=user;
+    if(user && isAllowedAccessUser(user)){
+      closeAuthGate();
+      renderSecurityState();
+      startProtectedServices();
+      return;
+    }
+    if(user && !isAllowedAccessUser(user)){
+      try{ await firebaseAuth.signOut(); }
+      catch(error){ console.warn('Firebase signOut error', error); }
+      authUser=null;
+      openAuthGate('Esta cuenta no está autorizada para esta app.', 'err');
+      renderSecurityState();
+      return;
+    }
+    openAuthGate('Inicia sesión con la cuenta del equipo para entrar.', 'ok');
+    renderSecurityState();
+  });
+}
+
+async function submitAccessLogin(){
+  if(!AUTH_REQUIRED){
+    openAuthGate('AUTH_REQUIRED sigue en false. Activa Firebase Auth y luego cambia esa constante cuando quieras encenderlo.', 'err');
+    return;
+  }
+  if(!firebaseAuth){
+    openAuthGate('Firebase Auth no está disponible en este proyecto.', 'err');
+    return;
+  }
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value.trim();
+  if(!email || !password){
+    openAuthGate('Escribe correo y contraseña.', 'err');
+    return;
+  }
+  openAuthGate('Validando acceso...', 'ok');
+  try{
+    await firebaseAuth.signInWithEmailAndPassword(email,password);
+  } catch(error){
+    console.warn('Firebase signIn error', error);
+    openAuthGate('No se pudo iniciar sesión. Revisa el correo, la contraseña o la configuración del proveedor.', 'err');
+  }
+}
+
+async function logoutAccess(){
+  if(!AUTH_REQUIRED || !firebaseAuth){
+    setInlineMessage('auth-status-msg', 'La autenticación fuerte todavía no está activa en este proyecto.', 'err');
+    renderSecurityState();
+    return;
+  }
+  try{
+    await firebaseAuth.signOut();
+    setInlineMessage('auth-status-msg', 'Sesión cerrada en este dispositivo.', 'ok');
+  } catch(error){
+    console.warn('Firebase logout error', error);
+    setInlineMessage('auth-status-msg', 'No se pudo cerrar la sesión en este momento.', 'err');
+  }
+  renderSecurityState();
+}
+
+function goToSelector(){
+  const active=document.querySelector('.screen.active');
+  const activeId=active ? active.id : '';
+  if((activeId==='s-game' || activeId==='s-lobby') && !confirm('Se cerrará la partida actual y volverás al selector de juegos.')) return;
+  clearInterval(timerInt);
+  setGameStatus('');
+  const shouldRemovePlayer = !currentPlayerFinished;
+  cleanupPlayerSession(shouldRemovePlayer);
+  const adminButton = document.querySelector('.admin-btn');
+  if(adminButton) adminButton.style.display='';
+  const flagPanel=document.getElementById('q-flag');
+  if(flagPanel){
+    flagPanel.classList.add('hidden');
+    flagPanel.innerHTML='';
+  }
+  const stage=document.getElementById('game-stage');
+  if(stage) stage.classList.remove('hidden');
+  document.getElementById('opts').innerHTML='';
+  document.getElementById('q-lbl').textContent='';
+  document.getElementById('q-cnt').textContent='';
+  selectedGame='actions';
+  showScreen('s-splash');
+}
 
 async function startGame(){
   const n=document.getElementById('player-name').value.trim();
   const r=document.getElementById('room-code-input').value.trim().toUpperCase();
   if(selectedGame==='flags'){
-    startFlagGame('PLAYER1');
+    await startFlagGame('PLAYER1');
     return;
   }
   if(!n){ document.getElementById('player-name').focus(); return; }
@@ -1744,6 +2197,7 @@ async function startGame(){
 
 function chooseGame(mode){
   selectedGame = mode;
+  if(mode==='flags') loadFlagCatalog();
   updateWelcomeScreen();
   showScreen('s-welcome');
 }
@@ -1755,13 +2209,16 @@ function updateWelcomeScreen(){
   const roomSection = document.getElementById('room-section');
   const nameSection = document.getElementById('player-name-section');
   const playButton = document.getElementById('play-button');
+  const rankingCard = document.getElementById('welcome-flag-ranking-card');
   if(selectedGame==='flags'){
     title.textContent = 'READY PLAYER 1?';
-    sub.textContent = 'Demo Arcade de Banderas';
+    sub.textContent = 'Mundial de Banderas';
     hint.textContent = 'Presiona START para jugar.';
     roomSection.style.display = 'none';
     nameSection.style.display = 'none';
     playButton.textContent = 'START';
+    rankingCard.style.display = '';
+    renderWelcomeFlagLeaderboard();
   } else {
     title.textContent = 'Adivina la Acción';
     sub.textContent = 'Únete con tu equipo y juega con código de sala.';
@@ -1769,19 +2226,38 @@ function updateWelcomeScreen(){
     roomSection.style.display = '';
     nameSection.style.display = '';
     playButton.textContent = '¡Jugar! 🎮';
+    rankingCard.style.display = 'none';
   }
 }
 
-function startFlagGame(name){
+async function startFlagGame(name){
   pName = name;
-  pRoom = 'Demo Banderas';
+  pRoom = 'Mundial de Banderas';
   score = 0;
   qIdx = 0;
-  deck = shuffle(FLAG_QUESTIONS).slice(0, Math.min(10, FLAG_QUESTIONS.length));
   currentGameLimit = 12;
   currentPlayerFinished = false;
-  document.getElementById('game-room-badge').textContent = '🌍 Demo Mundial';
+  clearInterval(timerInt);
+  document.getElementById('score-disp').textContent = score;
+  document.getElementById('game-room-badge').textContent = '🌍 Mundial de Banderas';
   showScreen('s-game');
+  setGameStatus('Cargando banderas del mundo...');
+  document.getElementById('q-cnt').textContent = 'Preparando banderas...';
+  document.getElementById('q-lbl').textContent = '';
+  document.getElementById('opts').innerHTML = '';
+  const stage=document.getElementById('game-stage');
+  if(stage) stage.classList.add('hidden');
+  const flagPanel=document.getElementById('q-flag');
+  if(flagPanel){
+    flagPanel.classList.add('hidden');
+    flagPanel.innerHTML = '';
+  }
+  const catalog = await loadFlagCatalog();
+  deck = buildFlagDeck(catalog, FLAG_GAME_QUESTION_COUNT);
+  if(!deck.length){
+    setGameStatus('No se pudieron cargar las banderas. Vuelve a intentarlo.');
+    return;
+  }
   setGameStatus('Selecciona la bandera correcta.');
   loadQ();
 }
@@ -1796,13 +2272,16 @@ function loadQ(){
   document.getElementById('q-cnt').textContent=`Pregunta ${qIdx+1} de ${deck.length}`;
   document.getElementById('q-lbl').textContent=q.label;
   const flagPanel=document.getElementById('q-flag');
+  const stage=document.getElementById('game-stage');
   if(selectedGame==='flags'){
+    if(stage) stage.classList.add('hidden');
     flagPanel.classList.remove('hidden');
-    flagPanel.innerHTML = renderFlagGraphic(q.code);
+    renderFlagGraphic(flagPanel,q);
     document.getElementById('sm-svg').innerHTML = '';
   } else {
+    if(stage) stage.classList.remove('hidden');
     flagPanel.classList.add('hidden');
-    flagPanel.textContent = '';
+    flagPanel.innerHTML = '';
     document.getElementById('sm-svg').innerHTML=`<g>${ANIMS[q.anim]?ANIMS[q.anim].build():ANIMS.stow.build()}</g>`;
   }
   const opts=document.getElementById('opts'); opts.innerHTML='';
@@ -1926,11 +2405,10 @@ window.addEventListener('load', ()=>{
   populateRoomFromUrl();
   populateUrlGame();
   renderRoomSelect();
-  initFirebaseSync();
-  initFlagRankingSync();
-  initIdeaBucketSync();
+  renderArcadeLeaderboard();
+  renderWelcomeFlagLeaderboard();
   renderIdeas();
-  if(getQueryParam('mode')==='host') startPresenter();
+  bootstrapAccess();
 });
 </script>
 </body>
